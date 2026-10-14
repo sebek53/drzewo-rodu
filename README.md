@@ -19,7 +19,7 @@ Plik startowy sam sprawdza, czego brakuje:
 
 Nie zamykaj czarnego okna, dopóki korzystasz z aplikacji. Najlepiej działa w **Chrome lub Edge** (zapis do pliku .ged i listów).
 
-**Odczyt aktów przez Claude (opcjonalnie):** skopiuj `.env.example` jako `.env` i wpisz w nim swój klucz Anthropic API.
+**Odczyt aktów przez Claude (opcjonalnie):** w aplikacji ☰ → *Klucz Claude* wklej swój klucz z [console.anthropic.com](https://console.anthropic.com/settings/keys) (płacisz Anthropic za własne odczyty). Zaawansowani mogą zamiast tego użyć pliku `.env`.
 
 Dla zaawansowanych: `python serwer.py [port]` (domyślnie 8770).
 

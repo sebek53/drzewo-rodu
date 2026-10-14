@@ -18,10 +18,10 @@ Odczytaj go i zwróć WYŁĄCZNIE obiekt JSON (bez komentarzy) o polach:
  "uwagi": "niepewne odczyty oznacz (?)"}
 Puste pola zostaw jako "". Nie zgaduj – lepiej puste niż zmyślone."""
 
-def odczyt(data_url):
+def odczyt(data_url, key=None):
     import anthropic
     mt, b64 = re.match(r'data:([^;]+);base64,(.*)', data_url, re.S).groups()
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(api_key=key) if key else anthropic.Anthropic()
     r = client.beta.messages.create(
         model='claude-opus-5-5', max_tokens=16000,
         output_config={'effort': 'medium'},
@@ -40,10 +40,14 @@ class H(http.server.SimpleHTTPRequestHandler):
         if s.path != '/api/odczyt': return s.send_error(404)
         try:
             body = json.loads(s.rfile.read(int(s.headers['Content-Length'])))
-            if not os.environ.get('ANTHROPIC_API_KEY'): raise RuntimeError('Brak ANTHROPIC_API_KEY w pliku .env obok serwer.py')
-            out, code = odczyt(body['image']), 200
+            key = (s.headers.get('X-Api-Key') or '').strip()  # klucz z ustawień aplikacji (przeglądarka) ma pierwszeństwo przed .env
+            if not key and not os.environ.get('ANTHROPIC_API_KEY'): raise RuntimeError('Brak klucza: wpisz go w aplikacji (☰ → Klucz Claude) albo w pliku .env')
+            out, code = odczyt(body['image'], key or None), 200
         except Exception as e:
-            out, code = {'blad': str(e)}, 500
+            msg = str(e)
+            if 'authentication_error' in msg: msg = 'Nieprawidłowy klucz API – sprawdź go w aplikacji (☰ → Klucz Claude).'
+            elif 'credit balance' in msg: msg = 'Brak środków na koncie Anthropic – doładuj je na console.anthropic.com.'
+            out, code = {'blad': msg}, 500
         d = json.dumps(out, ensure_ascii=False).encode()
         s.send_response(code); s.send_header('Content-Type', 'application/json; charset=utf-8'); s.send_header('Content-Length', len(d)); s.end_headers(); s.wfile.write(d)
 
