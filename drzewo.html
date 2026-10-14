@@ -128,7 +128,7 @@ function parse(text){({roots,byId}=parseTo(text))}
 // nowe drzewo bez pliku: minimalny GEDCOM (nagłówek, autor = pierwsza osoba, ta osoba), od razu zapis do wybranego pliku .ged
 function newTree({g,s,x,b,p}){const c=t=>String(t||'').replace(/[\r\n]+/g,' ').trim(),G=c(g),S=c(s);
   const ged=['0 HEAD','1 GEDC','2 VERS 5.5.1','2 FORM LINEAGE-LINKED','1 CHAR UTF-8','1 SOUR DRZEWO_RODU','1 SUBM @U1@','0 @U1@ SUBM',`1 NAME ${G} ${S}`,
-    '0 @I1@ INDI',`1 NAME ${G} /${S}/`,`2 GIVN ${G}`,`2 SURN ${S}`,`1 SEX ${x==='F'?'F':'M'}`,...(c(b)||c(p)?['1 BIRT',...(c(b)?[`2 DATE ${c(b).toUpperCase()}`]:[]),...(c(p)?[`2 PLAC ${c(p)}`]:[])]:[]),'0 TRLR'].join('\n');
+    '0 @I1@ INDI',`1 NAME ${G} /${S}/`,`2 GIVN ${G}`,`2 SURN ${S}`,`1 SEX ${x==='F'?'F':'M'}`,...(c(b)||c(p)?['1 BIRT',...(c(b)?[`2 DATE ${gedDate(c(b))}`]:[]),...(c(p)?[`2 PLAC ${c(p)}`]:[])]:[]),'0 TRLR'].join('\n');
   location.hash='@I1@';fileHandle=null;load(ged);setHandle(null);saveFile()} // Chrome/Edge: okno „Zapisz jako”, inne: pobranie pliku
 function ser(){ // linie >200 znaków (np. zdjęcia) dzielone na CONC – limit GEDCOM 255
   const out=[],ch=s=>s.match(/[\s\S]{1,200}/g)||[''];
@@ -166,7 +166,21 @@ const avatar=(p,cls='')=>`<img class="av ${sex(p)} ${cls}" src="${esc(photo(p)||
 // ======== edycja węzłów ========
 function setKid(n,tag,val){let k=kid(n,tag);if(!val){if(k)n.kids.splice(n.kids.indexOf(k),1);return}
   if(!k){k={lvl:n.lvl+1,id:null,tag,val:'',kids:[]};n.kids.push(k)}k.val=val;return k}
-function setEv(p,t,date,plac){if(!date&&!plac){setKid(p,t,'');return}const e=kid(p,t)||setKid(p,t,'Y');e.val='';setKid(e,'DATE',date);setKid(e,'PLAC',plac)}
+// polskie daty → GEDCOM: „3 czerwca 1976”, „3 cze 1976”, „03.06.1976”, „1976-06-03”, „VI 1976”, „około 1850”, „przed 1900”, „po 1900”, „między 1900 a 1910”
+const GM=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],RZ=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'],
+  PLM=[/^sty/,/^lut/,/^mar/,/^kwi/,/^maj/,/^cze/,/^lip/,/^sie/,/^wrz/,/^pa[źz]/,/^lis/,/^gru/];
+function gedDate(t){t=String(t||'').trim().replace(/\s+/g,' ').replace(/\s*r\.?$/i,'');if(!t)return'';
+  const one=x=>{x=x.trim();let m;
+    if(m=x.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))return`${+m[3]} ${GM[m[2]-1]} ${m[1]}`;
+    if(m=x.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/))return`${+m[1]} ${GM[m[2]-1]} ${m[3]}`;
+    if(m=x.match(/^(\d{1,2})[.\/](\d{4})$/))return`${GM[m[1]-1]} ${m[2]}`;
+    if(m=x.match(/^(?:(\d{1,2})\.?\s+)?([a-ząćęłńóśźż]+|[IVX]+)\.?\s+(\d{4})$/i)){const w=m[2].toLowerCase(),r=RZ.indexOf(m[2].toUpperCase()),i=r>=0?r:PLM.findIndex(re=>re.test(w));
+      const g=i>=0?GM[i]:GM.includes(m[2].toUpperCase().slice(0,3))?m[2].toUpperCase().slice(0,3):null;if(g)return`${m[1]?+m[1]+' ':''}${g} ${m[3]}`}
+    return x.toUpperCase()};
+  let m;if(m=t.match(/^(?:między|pomiędzy|miedzy)\s+(.+?)\s+(?:a|i)\s+(.+)$/i))return`BET ${one(m[1])} AND ${one(m[2])}`;
+  if(m=t.match(/^(około|ok\.?|ok|około roku|circa|ca\.?)\s+(.+)$/i))return`ABT ${one(m[2])}`;
+  if(m=t.match(/^przed\s+(.+)$/i))return`BEF ${one(m[1])}`;if(m=t.match(/^po\s+(.+)$/i))return`AFT ${one(m[1])}`;return one(t)}
+function setEv(p,t,date,plac){date=gedDate(date);if(!date&&!plac){setKid(p,t,'');return}const e=kid(p,t)||setKid(p,t,'Y');e.val='';setKid(e,'DATE',date);setKid(e,'PLAC',plac)}
 function newId(pre){let i=1;while(byId[`@${pre}${i}@`])i++;return `@${pre}${i}@`}
 function newNode(tag,pre){const n={lvl:0,id:newId(pre),tag,val:'',kids:[]};const tr=roots.findIndex(r=>r.tag==='TRLR');roots.splice(tr<0?roots.length:tr,0,n);byId[n.id]=n;return n}
 const ref=(n,tag,id)=>n.kids.push({lvl:n.lvl+1,id:null,tag,val:id,kids:[]});
@@ -237,7 +251,7 @@ function render(){
     <form id="nt" style="display:grid;gap:8px;max-width:360px;margin:0 auto;text-align:left">
      <input name="g" placeholder="Imię (imiona)" required><input name="s" placeholder="Nazwisko" required>
      <select name="x"><option value="M">mężczyzna</option><option value="F">kobieta</option></select>
-     <input name="b" placeholder="Data urodzenia, np. 3 JUN 1976 lub 1976"><input name="p" placeholder="Miejsce urodzenia">
+     <input name="b" placeholder="Data urodzenia, np. 3 czerwca 1976, 03.06.1976 lub 1976"><input name="p" placeholder="Miejsce urodzenia">
      <button class="pri">Utwórz drzewo i zapisz plik .ged</button></form></div>`;$('#nt').onsubmit=e=>{e.preventDefault();newTree(Object.fromEntries(new FormData(e.target)))};return}
   if(!byId[cur])cur=indis()[0].id;
   history.replaceState(null,'','#'+cur);
