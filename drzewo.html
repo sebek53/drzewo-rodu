@@ -572,7 +572,7 @@ var mapEpoch='auto',mapKeep=false,mapOpac=1,histLayer=null;const epokaFor=y=>map
 // klik w miejscowość w profilu: mapa w roku wydarzenia, z mapą z tej epoki
 function mapAt(pl,y){view='mapa';if(y)mapYear=y;mapEpoch='auto';mapFocus=geo(pl)||null;render()}
 document.addEventListener('click',e=>{const t=e.target.closest('.plac');if(t)mapAt(t.dataset.pl,+t.dataset.y||0)});
-var anim=null,mview=null,lmap=null,mapGen=new Set(),geoBusy=false,mapYear=null,showMig=true,mapFocus=null;
+var geoDone=0,geoAll=0,anim=null,mview=null,lmap=null,mapGen=new Set(),geoBusy=false,mapYear=null,showMig=true,mapFocus=null;
 function gensFrom(id){const g={[id]:0},q=[id];while(q.length){const x=q.shift(),p=byId[x],n=g[x];
   for(const[y,d]of[...parentsOf(p).map(y=>[y,1]),...childrenOf(p).map(y=>[y,-1]),...famsOf(p,'FAMS').map(f=>[spouseIn(f,x),0])])if(y&&!(y.id in g)){g[y.id]=n+d;q.push(y.id)}}return g}
 var genName=n=>n===0?'pokolenie osoby':n>0?(['','rodzice','dziadkowie','pradziadkowie'][n]||`${n-2}× pradziadkowie`):(['','dzieci','wnuki','prawnuki'][-n]||`${-n-2}× prawnuki`);
@@ -592,10 +592,10 @@ function renderMap(){
     const k=geo(pl)?geo(pl).join():pl.toLowerCase();const t=tr[k]??={pl,a:y,b:y,n:0};t.a=Math.min(t.a,y);t.b=Math.max(t.b,y);t.n++});
   const trail=Object.values(tr).sort((a,b)=>a.a-b.a);
   indis().forEach(p=>{if(!(p.id in G)||!vis(p))return;['BIRT','CHR','BAPM','RESI','DEAT','BURI'].forEach(t=>kids(p,t).forEach(e=>{const pl=kid(e,'PLAC')?.val?.trim();if(!pl)return;
-    if(!geo(pl)){miss.add(pl);return}const k=pl+'|'+G[p.id];(pts[k]??={pl,g:G[p.id],ps:new Map()}).ps.set(p.id,p)}))});
+    if(!geo(pl)){if(!(pl in geoC))miss.add(pl);return} /* null w geoC = już szukane, nie znaleziono – nie pytamy ponownie */const k=pl+'|'+G[p.id];(pts[k]??={pl,g:G[p.id],ps:new Map()}).ps.set(p.id,p)}))});
   const gl=[...new Set(Object.values(pts).map(x=>x.g))].sort((a,b)=>b-a);if(!mapGen.size)gl.forEach(g=>mapGen.add(g));
   $('#main').innerHTML=`<div id="tbar"><b>Mapa – ${esc(name(byId[cur]))}</b><small>kolor = pokolenie względem tej osoby</small><span style="margin-left:auto"></span>
-    ${miss.size?`<button id="geob">${geoBusy?'Szukam współrzędnych…':`Znajdź na mapie ${miss.size} miejsc`}</button>`:''}</div>
+    ${miss.size?`<button id="geob">${geoBusy?`Szukam współrzędnych… ${geoDone}/${geoAll}`:`Znajdź na mapie ${miss.size} miejsc`}</button>`:''}</div>
    <div id="wrap" style="display:flex;flex:none;height:calc(100vh - 125px);overflow:hidden"><div id="leg" style="width:260px;flex:none;overflow:auto;padding:10px;border-right:1px solid var(--line);background:var(--card)">
     <p style="margin:0 0 8px"><b>Mapa z epoki</b><br><select id="epoka" style="width:100%">${EPOKI.map(e=>`<option value="${e.k}" ${e.k===mapEpoch?'selected':''}>${e.t}</option>`).join('')}</select><small>Teraz: <b>${epokaFor(mapYear).t}</b> (rok ${mapYear})</small>${epokaFor(mapYear).l?`<br><small>Dziś</small> <input type="range" id="opac" min="0" max="100" value="${Math.round(mapOpac*100)}" style="width:62%;vertical-align:middle" title="Przezroczystość starej mapy – przesuń, by porównać z dzisiejszą"> <small>dawniej</small>`:''}</p>
     ${gl.map(g=>`<label class="row" style="gap:6px;margin:4px 0"><input type="checkbox" data-g="${g}" ${mapGen.has(g)?'checked':''}><i style="width:12px;height:12px;border-radius:50%;background:${genCol(g)}"></i>${g>0?'+':''}${g} ${genName(g)}</label>`).join('')}
@@ -636,10 +636,12 @@ function renderMap(){
   document.querySelectorAll('#leg [data-m]').forEach(d=>d.onclick=()=>{const l=ml[d.dataset.m];if(l){lmap.fitBounds(l.getBounds(),{padding:[60,60],maxZoom:10});l.openPopup()}});
   document.querySelectorAll('#leg input[data-g]').forEach(i=>i.onchange=()=>{i.checked?mapGen.add(+i.dataset.g):mapGen.delete(+i.dataset.g);renderMap()});
   $('#gall').onclick=e=>{e.preventDefault();gl.forEach(g=>mapGen.add(g));renderMap()};$('#gnone').onclick=e=>{e.preventDefault();mapGen.clear();mapGen.add(1e9);renderMap()};
-  if($('#geob'))$('#geob').onclick=async()=>{if(geoBusy)return;geoBusy=true;renderMap();
-    for(const pl of miss){try{const r=await(await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(pl.replace(/,?\s*par\.\s*/,', ').split(',')[0]))).json();
+  if($('#geob'))$('#geob').onclick=async()=>{if(geoBusy)return;geoBusy=true;geoDone=0;geoAll=miss.size;renderMap();
+    for(const pl of miss){geoDone++;if($('#geob'))$('#geob').textContent=`Szukam współrzędnych… ${geoDone}/${geoAll}`;try{const r=await(await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(pl.replace(/,?\s*par\.\s*/,', ').split(',')[0]))).json();
       geoC[pl]=r[0]?[+r[0].lat,+r[0].lon]:null}catch(e){}await new Promise(r=>setTimeout(r,1100))}
-    try{localStorage.setItem('geo',JSON.stringify(geoC))}catch(e){}geoBusy=false;if(view==='mapa')renderMap()};
+    try{localStorage.setItem('geo',JSON.stringify(geoC))}catch(e){}geoBusy=false;if(view==='mapa'&&!sAnim&&!anim)renderMap()};
+  // nowe drzewo / nowe miejsca: współrzędne pobierają się same przy otwarciu mapy (OpenStreetMap, 1 zapytanie/s)
+  if(miss.size&&!geoBusy&&!sAnim&&!anim)setTimeout(()=>$('#geob')?.click(),300);
 }
 // ======== notatki badawcze: rekordy „0 @Rn@ NOTE tytuł” + treść w CONT – zapisywane w tym samym pliku .ged ========
 var noteSel=null,noteEdit=false;
