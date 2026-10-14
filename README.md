@@ -27,3 +27,8 @@ Dla zaawansowanych: `python serwer.py [port]` (domyślnie 8770).
 Aplikacja jest darmowa. Jeśli Ci pomogła, możesz postawić autorowi kawę – przycisk jest też w menu ☰.
 
 ☕ [buycoffee.to/sebastian.garstka](https://buycoffee.to/sebastian.garstka) (BLIK, przelew) · [ko-fi.com/sebastiangarstka](https://ko-fi.com/sebastiangarstka)
+
+## Licencja / License
+Copyright © 2026 Sebastian Garstka. Program udostępniony na licencji **GNU AGPL v3** (plik [LICENSE](LICENSE)): możesz go używać, zmieniać i rozpowszechniać, także komercyjnie, pod warunkiem że zmieniony kod – również gdy udostępniasz program innym przez internet – udostępnisz na tej samej licencji, z informacją o autorze.
+
+*Licensed under the GNU Affero General Public License v3.0.*
