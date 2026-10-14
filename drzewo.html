@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Drzewo rodu</title>
+<style>
+:root{--bg:#fff;--canvas:#f2f2f2;--card:#fff;--ink:#333;--mut:#777;--line:#ccc;--soft:#eee;--acc:#f26a2e;--sel:#00a3b4;--link:#105a83;--m:#5b8fc7;--f:#d96f9c;
+  --hdr:radial-gradient(647% 232% at 125% 74%,#ffd8b7 0,#fff 100%);--shadow:0 2px 8px rgba(0,0,0,.12)}
+:root[data-theme=dark]{--bg:#1b1b1d;--canvas:#141416;--card:#25252a;--ink:#e8e8e8;--mut:#9a9a9a;--line:#3d3d44;--soft:#2e2e34;--link:#7fc3ea;
+  --hdr:radial-gradient(647% 232% at 125% 74%,#5a3420 0,#1b1b1d 100%);--shadow:0 2px 10px rgba(0,0,0,.5)}
+@media (prefers-color-scheme:dark){:root[data-theme=auto]{--bg:#1b1b1d;--canvas:#141416;--card:#25252a;--ink:#e8e8e8;--mut:#9a9a9a;--line:#3d3d44;--soft:#2e2e34;--link:#7fc3ea;
+  --hdr:radial-gradient(647% 232% at 125% 74%,#5a3420 0,#1b1b1d 100%);--shadow:0 2px 10px rgba(0,0,0,.5)}}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+button,input,select,textarea{font:inherit;color:var(--ink)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:20px;padding:6px 14px}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+input,select,textarea{border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--card)}
+a,.lnk{color:var(--link);cursor:pointer;text-decoration:none}a:hover,.lnk:hover{text-decoration:underline}
+small,.mut{color:var(--mut)}
+/* pasek górny */
+#top{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+#logo{font-weight:700;font-size:19px;color:var(--acc);margin-right:10px;white-space:nowrap}
+#nav button{border:0;border-radius:0;background:none;padding:8px 10px;border-bottom:3px solid transparent}
+#nav button.on{border-bottom-color:var(--acc);font-weight:700}
+#sbox{position:relative;flex:1;min-width:180px;max-width:380px}
+#q{width:100%;border-radius:20px;padding-left:14px}
+#sres{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);max-height:60vh;overflow:auto;display:none;z-index:30}
+#sres div{padding:7px 12px;cursor:pointer;display:flex;gap:8px;align-items:center}#sres div:hover{background:var(--soft)}
+#tools{display:flex;gap:6px;margin-left:auto;align-items:center}
+#menu{position:absolute;right:16px;top:52px;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:10px;display:none;z-index:40;width:280px}
+#menu label{display:block;margin:6px 0}#menu hr{border:0;border-top:1px solid var(--line)}
+main{flex:1;display:flex;flex-direction:column;min-height:0}
+/* awatary */
+.av{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--soft);border:2px solid var(--m)}
+.av.F{border-color:var(--f)}.av.U{border-color:var(--line)}
+/* drzewo */
+#tbar{display:flex;gap:8px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#wrap{position:relative;flex:1;min-height:420px}
+#tv{position:absolute;inset:0;overflow:auto;background:var(--canvas);cursor:grab;touch-action:none;user-select:none}
+#tv.drag{cursor:grabbing}#tv.drag .c{pointer-events:none}
+#tv .c{position:absolute;width:220px;height:102px;background:var(--card);border:2px solid #17b4ce;border-radius:8px;padding:8px 10px;display:flex;gap:10px;align-items:center;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.15)}#tv .c.sF{border-color:#fc8181}#tv .c.sU{border-color:#bbb}#tv .c .av{width:64px;height:64px;border:1px solid #ccc}
+#tv .c:hover{border-color:var(--acc)}
+#tv .c.me{box-shadow:0 0 0 3px var(--sel),0 1px 6px rgba(0,0,0,.15)}#tv .c.sel{box-shadow:0 0 0 3px var(--acc)}
+#tv .c .t{min-width:0}#tv .c b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:15px;line-height:18px;color:var(--ink)}
+#tv .c small{display:block;margin-top:4px;font-size:14px;color:#595959}#tv .c .t i{display:block;font-style:normal;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#tv .c .ed{position:absolute;right:8px;bottom:6px;font-size:15px;color:#595959;opacity:0;transition:opacity .15s}#tv .c:hover .ed{opacity:1}#tv .c .ed:hover{color:var(--sel)}#tv .c .ak{position:absolute;right:8px;top:7px;min-width:18px;height:18px;border-radius:9px;background:#49cf77;color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center;padding:0 4px}#tv .c .ak:hover{filter:brightness(.9)}
+#tv .c.pc{border-width:1px;padding:0 14px 0 10px;gap:10px}#tv .c.pc.me{background:var(--card)}#tv .c.ph{border-radius:42px}#tv .c.ps{border-radius:23px;padding-left:5px}#tv .c.pt{border-radius:13px;padding:0 12px}#tv .c.pc .av{border-radius:50%!important}#tv .c.ph .av{width:64px;height:64px}#tv .c.ps .av{width:36px;height:36px}#tv .c.pc b{font-size:13px;font-weight:500;line-height:15px;-webkit-line-clamp:2}#tv .c.pt b{-webkit-line-clamp:1;white-space:nowrap;text-overflow:ellipsis;display:block}#tv .c.pc small{font-size:12px;margin-top:2px;color:#595959}#tv .c.pc.empty{color:#767676;font-size:12px;border:1px dashed #767676;background:transparent!important}#tv .c .ex{position:absolute;right:-22px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid #999;line-height:15px;text-align:center;font-weight:700;color:#555}#tv .c .ex:hover{background:var(--sel);color:#fff}#tv .c.pm{border-radius:32px;padding-left:6px}#tv .c.pm .av{width:48px;height:48px}#tv .pbr{position:absolute;width:26px;height:26px;border-radius:50%;background:#fff;border:1px solid #999;text-align:center;line-height:23px;font-weight:700;color:#555;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.15)}#tv .pbr:hover,#tv .pbr.on{background:var(--sel);color:#fff;border-color:var(--sel)}@keyframes pls{0%{stroke-width:14;stroke-opacity:.9}100%{stroke-width:1;stroke-opacity:1}}.leaflet-interactive.pulse{animation:pls 1.4s ease-out}@keyframes bpop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}.bpopw{padding:0!important;border-radius:10px!important;border:2px solid #f26a2e!important}.bpop{display:flex;gap:8px;align-items:center;padding:6px 10px;font-size:13px;line-height:1.3;animation:bpop .5s ease-out;transform-origin:bottom center}.bpop img{width:40px;height:40px;border-radius:50%;object-fit:cover}.vt{display:inline-flex;border:1px solid var(--line);border-radius:20px;overflow:hidden}.vt button{border:0;border-radius:0}.vt button.on{background:var(--sel);color:#fff}
+#tv .c.empty{border-style:dashed;color:var(--mut);justify-content:center;background:transparent}
+#tv .up{position:absolute;top:-19px;right:16px;display:flex;gap:9px;padding:2px;cursor:pointer}#tv .up i{width:20px;height:11px;border-radius:4px;background:#8d9ab0}#tv .up:before{content:'';position:absolute;left:22px;right:22px;top:7px;border-top:1.5px solid #8d9ab0}#tv .up:after{content:'';position:absolute;left:50%;top:7px;height:12px;border-left:1.5px solid #8d9ab0}#tv .up:hover i,#tv .up.on i{background:var(--sel)}#tv .dn{position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);width:26px;height:16px;line-height:14px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:0 0 12px 12px;font-weight:700;cursor:pointer}#tv .dn:hover{color:var(--sel)}
+#tv svg{position:absolute;left:0;top:0;pointer-events:none}
+#panel h4{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+#panel .fam{padding:4px 0}#panel .fam .av{width:36px;height:36px}
+#panel .kv{display:grid;grid-template-columns:78px 1fr;gap:4px 8px;font-size:13px}
+#panel{position:absolute;left:12px;top:12px;bottom:12px;width:340px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:auto;padding:16px;display:none;z-index:10}
+#panel .x{position:absolute;right:8px;top:8px;border:0;font-size:18px;padding:0 8px}
+#panel .big{width:96px;height:96px}
+#panel .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}#panel .grid2 button{border-radius:6px;padding:6px}
+/* profil */
+.phead{background:var(--hdr);padding:24px 32px 56px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.phead .av{width:130px;height:130px;border-width:3px}
+.phead h1{margin:0 0 6px;font-size:30px}
+.ptabs{display:flex;gap:22px;padding:0 32px;margin-top:-34px;border-radius:24px 24px 0 0;background:var(--bg);padding-top:14px;border-bottom:1px solid var(--line)}
+.ptabs span{padding:10px 2px;cursor:pointer;border-bottom:3px solid transparent}.ptabs span.on{border-bottom-color:var(--ink);font-weight:700}
+.pbody{padding:24px 32px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:start}
+.box{border:1px solid var(--line);border-radius:24px;padding:20px 24px;background:var(--card)}
+.box h2{margin:0 0 12px;font-size:18px}
+.fact{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--soft)}
+.fact .y{font-size:20px;text-align:center}.fact .y small{display:block;font-size:11px}
+.fam{display:flex;gap:10px;align-items:center;padding:7px 0;cursor:pointer}.fam:hover b{text-decoration:underline}
+.ph{display:inline-block;margin:0 10px 10px 0;vertical-align:top;width:150px}
+.ph img{width:150px;height:150px;object-fit:cover;border-radius:8px;display:block;cursor:zoom-in}
+.ph button{font-size:12px;padding:2px 8px;margin:4px 4px 0 0}
+.form{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;align-items:center;max-width:640px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{white-space:pre-wrap}
+/* lista osób */
+#people{padding:16px 32px;overflow:auto}
+#people table{border-collapse:collapse;width:100%}#people td,#people th{padding:6px 10px;border-bottom:1px solid var(--soft);text-align:left}
+#people tr:hover td{background:var(--soft);cursor:pointer}
+.empty-state{max-width:560px;margin:60px auto;text-align:center}
+@media (max-width:760px){.pbody{grid-template-columns:1fr;padding:16px}.phead{padding:16px 16px 50px}.ptabs{padding:12px 16px 0;overflow:auto}#people{padding:12px}
+  #panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:60%;border-radius:12px 12px 0 0}#logo{font-size:16px}}
+.nmd table.ntab{border-collapse:collapse;margin:8px 0;font-size:13px}.nmd .ntab td,.nmd .ntab th{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}.nmd h3,.nmd h4{margin:14px 0 6px}.nmd p{margin:6px 0}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+<div id="top">
+  <span id="logo">🌳 Drzewo rodu</span>
+  <span id="nav"><button data-v="drzewo">Drzewo</button><button data-v="przodkowie">Przodkowie</button><button data-v="profil">Profil</button><button data-v="osoby">Osoby</button><button data-v="mapa">Mapa</button><button data-v="notatki">Notatki</button><button data-v="siec">Sieć</button><button data-v="kontrola">Sprzeczności</button><button data-v="analizy">Analizy</button></span>
+  <div id="sbox"><input id="q" placeholder="Szukaj osoby…" autocomplete="off"><div id="sres"></div></div>
+  <div id="tools">
+    <button id="undo" onclick="undo()" disabled title="Ctrl+Z">↶ Cofnij</button>
+    <button class="pri" id="save" title="Pobierz plik do importu w MyHeritage">Zapisz .ged</button>
+    <button id="mbtn" title="Więcej">☰</button>
+  </div>
+  <div id="menu">
+    <button class="pri" onclick="openFile()" style="width:100%">Otwórz plik .ged</button><input type="file" id="file" accept=".ged" hidden>
+    <small>Zmiany zapisują się do tego samego pliku (Ctrl+S).</small>
+    <label><b>Porównaj z innym drzewem</b><input type="file" id="cmp" accept=".ged"></label>
+    <small id="cmpinfo"></small>
+    <hr>
+    <label><b>Wygląd</b><select id="theme"><option value="light">Jasny</option><option value="dark">Ciemny</option><option value="auto">Jak w systemie</option></select></label>
+    <hr><small id="stat"></small>
+  </div>
+</div>
+<main id="main"></main>
+<script>
+// ======== GEDCOM: węzły {lvl,id,tag,val,kids}, zapis 1:1 z powrotem ========
+let topView=false,keepView=null,lastTap={},roots=[],byId={},cur=null,sel=null,view='drzewo',ptab='szczegoly',gens=3,dgens=1,zoomLvl=1,all=false;
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function parseTo(text){
+  const roots=[],byId={},st=[];let last=null;
+  for(const raw of text.split(/\r?\n/)){
+    // MyHeritage wstawia do notatek „gołe” nowe linie (bez poziomu) – to ciąg dalszy poprzedniej wartości, nie wolno ich gubić
+    const m=raw.match(/^\s*(\d+)\s+(@[^@]+@\s+)?([A-Z_][A-Z0-9_]*)(?: (.*))?$/);
+    if(!m||+m[1]>st.length){if(last&&raw!=='')last.val+='\n'+raw;continue}
+    const n={lvl:+m[1],id:m[2]?m[2].trim():null,tag:m[3],val:m[4]||'',kids:[]};
+    if(n.tag==='CONC'||n.tag==='CONT'){const p=st[n.lvl-1];if(p){p.val+=(n.tag==='CONT'?'\n':'')+n.val;last=p;continue}}
+    st.length=n.lvl;(n.lvl?st[n.lvl-1].kids:roots).push(n);st[n.lvl]=n;last=n;if(n.id)byId[n.id]=n;
+  }
+  return {roots,byId};
+}
+function parse(text){({roots,byId}=parseTo(text))}
+function ser(){ // linie >200 znaków (np. zdjęcia) dzielone na CONC – limit GEDCOM 255
+  const out=[],ch=s=>s.match(/[\s\S]{1,200}/g)||[''];
+  const w=n=>{const ls=n.val.split('\n'),c=n.lvl+1,f=ch(ls[0]);
+    out.push(`${n.lvl}${n.id?' '+n.id:''} ${n.tag}${f[0]?' '+f[0]:''}`);f.slice(1).forEach(x=>out.push(`${c} CONC ${x}`));
+    ls.slice(1).forEach(l=>{const p=ch(l);out.push(`${c} CONT ${p[0]}`);p.slice(1).forEach(x=>out.push(`${c} CONC ${x}`))});
+    n.kids.forEach(w)};
+  roots.forEach(w);return out.join('\r\n')+'\r\n';
+}
+const kid=(n,t)=>n&&n.kids.find(k=>k.tag===t), kids=(n,t)=>n?n.kids.filter(k=>k.tag===t):[];
+const sub=(n,path)=>path.split('.').reduce((a,t)=>kid(a,t),n);
+const name=p=>(p&&sub(p,'NAME')?.val.replace(/\//g,'').replace(/\s+/g,' ').trim())||'(bez imienia)';
+const yr=(p,ev)=>(sub(p,ev+'.DATE')?.val||'').match(/\d{4}/)?.[0]||'';
+const life=p=>{const b=yr(p,'BIRT'),d=yr(p,'DEAT');return b||d?`${b||'?'} – ${d||(kid(p,'DEAT')?'?':'')}`:''};
+const sex=p=>kid(p,'SEX')?.val||'U';
+const cardName=p=>{const n=sub(p,'NAME');let g=(n?.val.split('/')[0]||'').replace(/\s*,\s*/g,' ').trim();const sn=(n?.val.split('/')[1]||'').trim(),m=(sub(n,'_MARNM')?.val||'').split('/')[0].trim();
+  const fit=x=>(g+' '+x).length>20?g.split(' ')[0]:g; // długie imiona: na karcie tylko pierwsze (pełne w profilu)
+  return m&&m!==sn&&sex(p)==='F'?{n:`${fit(m)} ${m}`.trim(),z:sn?`(z d. ${sn})`:''}:{n:`${fit(sn)} ${sn}`.trim()||name(p),z:''}};
+const aktCnt=p=>kids(p,'OBJE').filter(o=>/^Akt/i.test(sub(o,'TITL')?.val||'')).length;
+const indis=()=>roots.filter(n=>n.tag==='INDI');
+const famsOf=(p,t)=>kids(p,t).map(k=>byId[k.val]).filter(Boolean);
+// małżeństwa osoby w kolejności: wg roku ślubu, gdy wszystkie mają datę; inaczej kolejność z pliku (= kolejność z MyHeritage)
+const marrOrd=p=>{const fs=famsOf(p,'FAMS'),y=fs.map(f=>+yr(f,'MARR')||0);return y.every(Boolean)?fs.map((f,i)=>[f,y[i]]).sort((a,b)=>a[1]-b[1]).map(a=>a[0]):fs};
+const spouseIn=(f,id)=>byId[kid(f,kid(f,'HUSB')?.val===id?'WIFE':'HUSB')?.val];
+const parentsOf=p=>famsOf(p,'FAMC').flatMap(f=>['HUSB','WIFE'].map(t=>byId[kid(f,t)?.val])).filter(Boolean);
+const childrenOf=p=>famsOf(p,'FAMS').flatMap(f=>kids(f,'CHIL').map(c=>byId[c.val])).filter(Boolean);
+const siblingsOf=p=>famsOf(p,'FAMC').flatMap(f=>kids(f,'CHIL').map(c=>byId[c.val])).filter(s=>s&&s!==p);
+const ev=(p,t)=>{const e=kid(p,t);return e?[sub(e,'DATE')?.val,sub(e,'PLAC')?.val].filter(Boolean).join(' • '):''};
+const MONTHS={JAN:'sty',FEB:'lut',MAR:'mar',APR:'kwi',MAY:'maj',JUN:'cze',JUL:'lip',AUG:'sie',SEP:'wrz',OCT:'paź',NOV:'lis',DEC:'gru',ABT:'około',BEF:'przed',AFT:'po',EST:'ok.',CAL:'wyl.',BET:'między',AND:'a'};
+const pdate=s=>(s||'').replace(/\b[A-Z]{3}\b/g,m=>MONTHS[m]||m);
+const SIL='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" fill="#e3e3e3"/><circle cx="20" cy="15" r="7" fill="#bbb"/><path d="M6 38c1-9 7-13 14-13s13 4 14 13z" fill="#bbb"/></svg>');
+const photo=p=>kids(p,'OBJE').filter(o=>!/^Akt/i.test(sub(o,'TITL')?.val||'')).map(o=>sub(o,'FILE')?.val).find(Boolean)||''; // skany aktów nie są zdjęciem profilowym
+const avatar=(p,cls='')=>`<img class="av ${sex(p)} ${cls}" src="${esc(photo(p)||SIL)}" onerror="this.src='${SIL}'" draggable="false" alt="">`;
+
+// ======== edycja węzłów ========
+function setKid(n,tag,val){let k=kid(n,tag);if(!val){if(k)n.kids.splice(n.kids.indexOf(k),1);return}
+  if(!k){k={lvl:n.lvl+1,id:null,tag,val:'',kids:[]};n.kids.push(k)}k.val=val;return k}
+function setEv(p,t,date,plac){if(!date&&!plac){setKid(p,t,'');return}const e=kid(p,t)||setKid(p,t,'Y');e.val='';setKid(e,'DATE',date);setKid(e,'PLAC',plac)}
+function newId(pre){let i=1;while(byId[`@${pre}${i}@`])i++;return `@${pre}${i}@`}
+function newNode(tag,pre){const n={lvl:0,id:newId(pre),tag,val:'',kids:[]};const tr=roots.findIndex(r=>r.tag==='TRLR');roots.splice(tr<0?roots.length:tr,0,n);byId[n.id]=n;return n}
+const ref=(n,tag,id)=>n.kids.push({lvl:n.lvl+1,id:null,tag,val:id,kids:[]});
+// najpierw pytamy o dane, dopiero potem tworzymy węzły – anulowanie nic nie zostawia
+function ask(who){const g=prompt(`Imię ${who}:`);if(g===null)return null;const s=prompt(`Nazwisko ${who}:`);if(s===null)return null;return [g.trim(),s.trim()]}
+function mkPerson([g,s],sx){const p=newNode('INDI','N');const n=setKid(p,'NAME',`${g} /${s}/`);setKid(n,'GIVN',g);setKid(n,'SURN',s);setKid(p,'SEX',sx);return p}
+const WHO={father:['ojca','M'],mother:['matki','F'],brother:['brata','M'],sister:['siostry','F'],son:['syna','M'],daughter:['córki','F'],husband:['męża','M'],wife:['żony','F']};
+function addRelative(id,kind){
+  const p=byId[id],[who,sx]=WHO[kind];
+  if(kind==='father'||kind==='mother'){const t=kind==='father'?'HUSB':'WIFE',f0=famsOf(p,'FAMC')[0];
+    if(kid(f0,t))return alert(`${name(p)} ma już wpisan${kind==='father'?'ego ojca':'ą matkę'}.`);
+    const nm=ask(who);if(!nm)return;const f=f0||(()=>{const f=newNode('FAM','F');ref(f,'CHIL',id);ref(p,'FAMC',f.id);return f})();
+    const n=mkPerson(nm,sx);ref(f,t,n.id);ref(n,'FAMS',f.id)}
+  else if(kind==='brother'||kind==='sister'){const nm=ask(who);if(!nm)return;
+    const f=famsOf(p,'FAMC')[0]||(()=>{const f=newNode('FAM','F');ref(f,'CHIL',id);ref(p,'FAMC',f.id);return f})();
+    const n=mkPerson(nm,sx);ref(f,'CHIL',n.id);ref(n,'FAMC',f.id)}
+  else if(kind==='son'||kind==='daughter'){const fs=famsOf(p,'FAMS');let f=fs[0];
+    if(fs.length>1){const i=prompt(`${name(p)} ma ${fs.length} związki. Numer drugiego rodzica:\n`+fs.map((f,i)=>`${i+1}. ${spouseIn(f,id)?name(spouseIn(f,id)):'nieznany'}`).join('\n'),'1');if(i===null)return;f=fs[(+i||1)-1]||fs[0]}
+    const nm=ask(who);if(!nm)return;
+    if(!f){f=newNode('FAM','F');ref(f,sex(p)==='F'?'WIFE':'HUSB',id);ref(p,'FAMS',f.id)}
+    const n=mkPerson(nm,sx);ref(f,'CHIL',n.id);ref(n,'FAMC',f.id)}
+  else{const nm=ask(who);if(!nm)return;
+    const empty=famsOf(p,'FAMS').find(f=>!spouseIn(f,id)); // związek z nieznanym małżonkiem – uzupełnij
+    const me=sex(p)==='F'?'WIFE':'HUSB',t=me==='WIFE'?'HUSB':'WIFE';
+    const f=empty||(()=>{const f=newNode('FAM','F');ref(f,me,id);ref(p,'FAMS',f.id);return f})();
+    const n=mkPerson(nm,sx);ref(f,t,n.id);ref(n,'FAMS',f.id)}
+  persist();render()}
+function delP(id){const p=byId[id];if(!confirm(`Usunąć ${name(p)} z drzewa?`))return;
+  const next=[...parentsOf(p),...famsOf(p,'FAMS').map(f=>spouseIn(f,id)),...childrenOf(p),...siblingsOf(p)].find(Boolean);
+  roots.filter(r=>r.tag==='FAM').forEach(f=>f.kids=f.kids.filter(k=>k.val!==id));
+  roots.splice(roots.indexOf(p),1);delete byId[id];
+  if(cur===id)cur=next?.id||indis()[0]?.id;sel=null;persist();render()}
+function saveP(id){const p=byId[id],v=s=>$(s).value.trim();
+  const n=kid(p,'NAME')||setKid(p,'NAME','x');n.val=`${v('#e_g')} /${v('#e_s')}/`;setKid(n,'GIVN',v('#e_g'));setKid(n,'SURN',v('#e_s'));
+  setKid(p,'SEX',v('#e_x'));setEv(p,'BIRT',v('#e_bd'),v('#e_bp'));setEv(p,'DEAT',v('#e_dd'),v('#e_dp'));setEv(p,'BURI',v('#e_ud'),v('#e_up'));
+  kids(p,'OCCU').forEach(k=>p.kids.splice(p.kids.indexOf(k),1));if(v('#e_o'))setKid(p,'OCCU',v('#e_o'));
+  famsOf(p,'FAMS').forEach((f,i)=>{if($(`#e_m${i}d`))setEv(f,'MARR',v(`#e_m${i}d`),v(`#e_m${i}p`))});
+  kids(p,'NOTE').forEach(k=>p.kids.splice(p.kids.indexOf(k),1));if(v('#e_n'))setKid(p,'NOTE',v('#e_n'));
+  persist();ptab='szczegoly';render();if(fileHandle)saveFile(true)}
+
+// ======== zdjęcia z dysku: pomniejszane do 600px JPEG, zapisywane w .ged ========
+// ponytail: zdjęcia w .ged (~50KB/szt.) – pamięć przeglądarki ~5MB ≈ 80 zdjęć; więcej → IndexedDB
+async function addPhotos(id,files){const p=byId[id];
+  for(const file of files){try{const b=await createImageBitmap(file),s=Math.min(1,600/Math.max(b.width,b.height)),c=document.createElement('canvas');
+    c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext('2d').drawImage(b,0,0,c.width,c.height);
+    const o={lvl:1,id:null,tag:'OBJE',val:'',kids:[]};p.kids.push(o);setKid(o,'FORM','jpg');setKid(o,'FILE',c.toDataURL('image/jpeg',.82));setKid(o,'TITL',file.name.replace(/\.[^.]+$/,''));
+  }catch(e){alert('Nie udało się wczytać: '+file.name)}}
+  persist();render()}
+function delPhoto(id,i){const p=byId[id],o=kids(p,'OBJE')[i];if(!confirm('Usunąć zdjęcie?'))return;p.kids.splice(p.kids.indexOf(o),1);persist();render()}
+function mainPhoto(id,i){const p=byId[id],os=kids(p,'OBJE'),o=os[i];p.kids.splice(p.kids.indexOf(o),1);p.kids.splice(p.kids.indexOf(os[0]),0,o);persist();render()}
+function openImg(src){const w=open();w.document.write(`<body style="margin:0;background:#111;display:grid;place-items:center;min-height:100vh"><img src="${src}" style="max-width:100%;max-height:100vh">`)}
+
+// ======== nawigacja ========
+// historia przejść: Wstecz/Dalej jak w przeglądarce
+let hist=[],fwd=[];
+function back(){const h=hist.pop();if(!h)return;fwd.push([cur,view]);cur=h[0];view=h[1];sel=null;render()}
+function forward(){const h=fwd.pop();if(!h)return;hist.push([cur,view]);cur=h[0];view=h[1];sel=null;render()}
+function go(id,v){all=false;if(!byId[id])return;if(id!==cur||(v&&v!==view)){hist.push([cur,view]);if(hist.length>100)hist.shift();fwd=[]}cur=id;sel=null;if(v)view=v;if(v==='profil')ptab='szczegoly';render()}
+function noteTxt(v){const t=document.createElement('textarea');t.innerHTML=v.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'');return t.value}
+async function gedText(f){const b=new Uint8Array(await f.arrayBuffer());let s='';for(let i=0;i<b.length;i+=8192)s+=String.fromCharCode(...b.subarray(i,i+8192));
+  s=s.replace(/([\xc0-\xf4][\x80-\xbf]*)\r?\n\d+ CONC ([\x80-\xbf])/g,'$1$2');return new TextDecoder().decode(Uint8Array.from(s,c=>c.charCodeAt(0)))} // znaki UTF-8 rozcięte przez CONC (MyHeritage)
+function render(){
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+  $('#stat').textContent=`${indis().length} osób, ${roots.filter(r=>r.tag==='FAM').length} rodzin`;
+  if(!indis().length){$('#main').innerHTML=`<div class="empty-state"><h1>Twoje drzewo rodu</h1><p>Wczytaj plik .ged – np. eksport z MyHeritage (Drzewo → Zarządzaj drzewami → Eksportuj do GEDCOM).</p>
+    <button class="pri" onclick="openFile()">Otwórz plik .ged</button></div>`;return}
+  if(!byId[cur])cur=indis()[0].id;
+  history.replaceState(null,'','#'+cur);
+  if(lmap&&view!=='mapa'){lmap.remove();lmap=null}({drzewo:()=>{pview=false;renderTree()},przodkowie:()=>{pview=true;if(zoomLvl<.5)zoomLvl=.8;renderTree()},profil:renderProfile,osoby:renderPeople,mapa:renderMap,notatki:renderNotes,siec:renderSiec,kontrola:renderKontrola,analizy:renderAnaliz})[view]();
+}
+
+// ======== widok drzewa (jak MyHeritage) ========
+// ======== widok rodziny jak w MyHeritage ========
+// przodkowie w górę (gens), przy każdym przodku jego rodzeństwo z małżonkami; kwadraciki nad osobą = rozwiń jej rodziców w miejscu,
+// „+” pod osobą = rozwiń jej dzieci w miejscu. Układ: bloki z konturem per wiersz, dosuwane bez nakładania.
+const expU=new Set(),expD=new Set();
+// linia rodzic→dziecko: w dół, poziomo z zaokrąglonymi narożnikami (jak MyHeritage), w dół do karty
+const elbow=(x1,y1,x2,yb,y2)=>{const d=x2-x1,r=Math.min(30,Math.abs(d)/2,yb-y1,y2-yb),s=Math.sign(d);if(!r)return`M${x1} ${y1}V${yb}H${x2}V${y2}`;
+  return`M${x1} ${y1}V${yb-r}Q${x1} ${yb} ${x1+s*r} ${yb}H${x2-s*r}Q${x2} ${yb} ${x2} ${yb+r}V${y2}`};
+// siła dowodu powiązania: a = skan aktu, i = indeks/odpis (Geneteka, nr aktu), r = przekaz/drzewo, h = hipoteza
+const EVC={a:'#2b8a3e',i:'#e6a700',r:'#f08c00',h:'#e03131'},EVT={a:'skan aktu',i:'indeks / odpis aktu',r:'przekaz rodzinny / drzewo',h:'hipoteza'};var evMode=false;
+const txtOf=n=>!n||n.tag==='OBJE'?'':(n.val||'')+' '+n.kids.map(txtOf).join(' ');
+const hasAkt=(n,re)=>n&&kids(n,'OBJE').some(o=>re.test(sub(o,'TITL')?.val||''));
+function evOf(kind,p,f){
+  if(kind==='k'){const t=txtOf(p)+' '+(f?kids(f,'NOTE').map(txtOf).join(' '):'');if(/HIPOTEZA \(niepotwierdzona\)/i.test(t))return'h';
+    if(hasAkt(p,/^Akt (urodz|chrzt)|^Akt.*(chrzest|chrztu|urodzenia)/i))return'a';if(/Geneteka|Akt (ur|chrz)|akt nr|akt \d/i.test(t)||kid(p,'SOUR'))return'i';return'r'}
+  const sp=f?['HUSB','WIFE'].map(k=>byId[kid(f,k)?.val]):[],t=txtOf(f);if(/HIPOTEZA \(niepotwierdzona\)/i.test(t))return'h';
+  if(hasAkt(f,/^Akt.*ślub/i)||sp.some(x=>hasAkt(x,/^Akt.*ślub/i)))return'a';if(/Geneteka|akt ślubu|Akt ślubu/i.test(t)||kid(f,'SOUR'))return'i';return'r'}
+// podsumowanie dla całego drzewa: ile powiązań rodzic–dziecko na jakim dowodzie, do którego roku sięga ciąg aktów
+function evStats(){const c={a:0,i:0,r:0,h:0};let oldest=null;indis().forEach(p=>{const f=famsOf(p,'FAMC')[0];if(!f)return;const k=evOf('k',p,f);c[k]++;const y=+yr(p,'BIRT')||+yr(p,'CHR');if(k==='a'&&y&&(!oldest||y<oldest))oldest=y});return{c,oldest}}
+function layout(id){
+  const CW=220,CH=102,GX=34,RH=170,cards=[],edges=[],shown=new Set();
+  const box=c=>({cards:c?[c]:[],ct:c?new Map([[c.row,[c.x,c.x+CW]]]):new Map()});
+  const mk=(per,row,cls='')=>{const c={x:0,row,per,cls};cards.push(c);per&&shown.add(per.id);return c};
+  const shift=(b,dx)=>{b.cards.forEach(c=>c.x+=dx);b.ct.forEach(v=>{v[0]+=dx;v[1]+=dx});return b};
+  const join=(a,b)=>{b.cards.forEach(c=>a.cards.push(c));b.ct.forEach(([l,r],k)=>{const v=a.ct.get(k);a.ct.set(k,v?[Math.min(v[0],l),Math.max(v[1],r)]:[l,r])});return a};
+  const gap=(a,b,dx)=>{let need=null;b.ct.forEach(([l,r],k)=>{const v=a.ct.get(k);if(v&&l+dx<v[1]+GX&&r+dx>v[0]-GX){const n=v[1]+GX-l;need=need===null?n:Math.max(need,n)}});return need};
+  const hcat=bs=>bs.reduce((a,b)=>{if(!a)return b;let dx=gap(a,b,-1e9);if(dx===null){dx=Math.max(...[...a.ct.values()].map(v=>v[1]))+GX-Math.min(...[...b.ct.values()].map(v=>v[0]))}
+    return join(a,shift(b,dx))},null)||box();
+  const under=(a,b,dx)=>{let n;while((n=gap(a,b,dx))!==null&&n>dx)dx=n;return join(a,shift(b,dx))}; // b w miejscu dx, przesunięte w prawo przy kolizji
+  const P=x=>{const f=famsOf(x,'FAMC')[0];return f?[byId[kid(f,'HUSB')?.val],byId[kid(f,'WIFE')?.val],f]:[]};
+  const ch=f=>kids(f,'CHIL').map(c=>byId[c.val]).filter(Boolean);
+  // rodzina f: para (bloki pochodzenia obojga) + dzieci pod spodem; kidBox(c) daje blok dziecka i jego kartę
+  const fst=new Set(),family=(f,row,depth,kidBox,order)=>{if(fst.has(f))depth=-1e9;fst.add(f);try{return fam1(f,row,depth,kidBox,order)}finally{fst.delete(f)}};
+  const fam1=(f,row,depth,kidBox,order)=>{const h=byId[kid(f,'HUSB')?.val],w=byId[kid(f,'WIFE')?.val];
+    const H=h?origin(h,row,depth,'L'):{b:box(mk(null,row,'empty'))},W=w?origin(w,row,depth,'R'):{b:box(mk(null,row,'empty'))};
+    const top=hcat([H.b,W.b]),ca=H.b.cards.find(c=>c.row===row&&c.per===h)||H.b.cards[0],cb=W.b.cards.find(c=>c.row===row&&c.per===w)||W.b.cards[0];
+    edges.push(['m',ca,cb,false,f]);let kl=ch(f);if(order&&row<-2&&!expD.has(h?.id)&&!expD.has(w?.id))kl=[order[0]]; // rodzeństwo dalszych przodków po kliknięciu „+”
+    if(order){const o=kl.filter(c=>c!==order[0]);kl=order[1]==='L'?[...o,order[0]]:[order[0],...o]}const ks=kl.map(kidBox);if(!ks.length)return{b:top,ca,cb};
+    const kb=hcat(ks.map(k=>k.b)),kc=ks.map(k=>k.c),mid=(ca.x+cb.x+CW)/2,kmid=(kc[0].x+kc[kc.length-1].x+CW)/2;
+    edges.push(['k',ca,cb,kc,false,f]);return{b:under(top,kb,mid-kmid),ca,cb}};
+  // blok pochodzenia osoby x: jej rodzice (+dalsi przodkowie) nad nią, rodzeństwo obok; sama x bez własnej rodziny
+  const origin=(x,row,depth,side)=>{const [h,w,f]=P(x),d=expU.has(x.id)&&depth>-1e8?Math.max(depth,1):depth;
+    if(!f||d<1){const c=mk(x,row);return{b:box(c),c}}
+    let me;const r=family(f,row-1,d-1,c=>c===x?(me={b:box(mk(x,row)),c:null},me.c=me.b.cards[0],me):down(c,row,false),[x,side]);return{b:r.b,c:me.c}};
+  // blok potomny: osoba + małżonkowie (ich rodzice rozwijani na żądanie) + dzieci, jeśli rozwinięte
+  const down=(x,row,open)=>{const fs=famsOf(x,'FAMS');const me=mk(x,row,x.id===id?'me':'');let b=box(me);const showK=open||expD.has(x.id);
+    // jak MyHeritage: kobieta zawsze po prawej; kolejni małżonkowie dalej w tę samą stronę, linia przerywana, dzieci spod karty małżonka
+    const fem=sex(x)==='F',parts=marrOrd(x).map((f,i)=>{const s=spouseIn(f,x.id),o=s?origin(s,row,0,fem?'L':'R'):{b:box(mk(null,row,'empty'))};o.c=o.c||o.b.cards[0];edges.push(['m',me,o.c,i>0,f]);return{f,c:o.c,b:o.b,i}});
+    b=hcat(fem?[...parts.map(q=>q.b).reverse(),b]:[b,...parts.map(q=>q.b)]);
+    if(!showK)return{b,c:me};const ks=[];
+    (fem?[...parts].reverse():parts).forEach(({f,c,i})=>{const k=ch(f).map(k=>down(k,row+1,open&&row+1<dgens));if(k.length){ks.push(...k);edges.push(['k',me,c,k.map(z=>z.c),i>0,f])}});
+    if(!ks.length)return{b,c:me};const xs=[me,...parts.map(q=>q.c)].map(c=>c.x),kb=hcat(ks.map(k=>k.b)),mid=(Math.min(...xs)+Math.max(...xs)+CW)/2,kmid=(ks[0].c.x+ks.at(-1).c.x+CW)/2;
+    return{b:under(b,kb,mid-kmid),c:me}};
+  const p=byId[id],[h,w,f]=P(p);let root;
+  if(f&&gens>0)root=family(f,-1,gens-1,c=>down(c,0,c===p)).b;else root=down(p,0,true).b;
+  // współrzędne
+  const minR=Math.min(...cards.map(c=>c.row)),minX=Math.min(...cards.map(c=>c.x));
+  cards.forEach(c=>{c.x+=20-minX;c.y=(c.row-minR)*RH+30});
+  const lines=[],dash=[],ev=[];edges.forEach(e=>{if(e[0]==='m'){const[_,a,b,far,f]=e,[l,r]=a.x<b.x?[a,b]:[b,a];if(far)dash.push(`M${b.x<a.x?b.x+CW:b.x} ${a.y+CH/2}h${b.x<a.x?GX:-GX}`);else{lines.push(`M${l.x+CW} ${a.y+CH/2}H${r.x}`);ev.push([lines.length-1,evOf('m',null,f)])}}else{const[_,a,b,ks,far,f]=e,mx=far?b.x+CW/2:(Math.min(a.x,b.x)+CW+Math.max(a.x,b.x))/2,y=far?b.y+CH:a.y+CH/2;
+    ks.forEach(k=>{lines.push(elbow(mx,y,k.x+CW/2,k.y-30,k.y));if(k.per)ev.push([lines.length-1,evOf('k',k.per,f)])})}});
+  return{cards:cards.map(c=>({x:c.x,y:c.y,per:c.per,cls:c.per?c.cls:'empty'})),lines,dash,ev,W:Math.max(...cards.map(c=>c.x))+CW+20,H:Math.max(...cards.map(c=>c.y))+CH+40};
+}
+// całe drzewo: las potomków od wszystkich najstarszych przodków; dzieci rodziny rysowane raz – pod mężem (lub pod żoną, jeśli tylko ona ma rodziców w drzewie)
+function layoutAll(){
+  const CW=220,CH=102,GX=34,RH=180,slotW=CW+GX,cards=[],lines=[],dash=[],ev=[],seen=new Set(),hasP=x=>x&&famsOf(x,'FAMC').length>0;
+  const ch=f=>kids(f,'CHIL').map(c=>byId[c.val]).filter(Boolean);
+  const owner=f=>{const h=byId[kid(f,'HUSB')?.val],w=byId[kid(f,'WIFE')?.val];return h&&(hasP(h)||!hasP(w))?h:w};
+  const build=x=>{seen.add(x.id);return{x,fams:marrOrd(x).map(f=>({fam:f,sp:spouseIn(f,x.id),kids:owner(f)===x?ch(f).filter(c=>!seen.has(c.id)).map(c=>(seen.add(c.id),c)).map(build):[]}))}};
+  const roots=indis().filter(x=>!hasP(x)&&!seen.has(x.id)&&(!famsOf(x,'FAMS').length||famsOf(x,'FAMS').some(f=>owner(f)===x))).map(build);
+  indis().filter(x=>!seen.has(x.id)&&!famsOf(x,'FAMS').some(f=>seen.has(spouseIn(f,x.id)?.id))).forEach(x=>roots.push(build(x))); // reszta (np. pętle)
+  const w=n=>n.w??=Math.max((1+n.fams.length)*slotW,n.fams.reduce((a,f)=>a+f.kids.reduce((b,c)=>b+w(c),0),0));
+  // małżonkowie na przemian po prawej/lewej (para zawsze obok siebie); dzieci każdej pary pod nią, w kolejności od lewej
+  const place=(n,k,left,y0)=>{const own=(1+n.fams.length)*slotW,l0=left+(n.w-own)/2,y=y0+k*RH,fem=sex(n.x)==='F',nf=n.fams.length,px=fem?l0+nf*slotW:l0;cards.push({x:px,y,per:n.x,cls:n.x.id===cur?'me':''});
+    let kl=left+(n.w-n.fams.reduce((a,f)=>a+f.kids.reduce((b,c)=>b+c.w,0),0))/2;
+    const sl=n.fams.map((f,i)=>({f,i,sx:px+(fem?-(i+1):i+1)*slotW}));if(fem)sl.reverse(); // dzieci od lewej
+    sl.forEach(({f,i,sx})=>{const a=Math.min(px,sx),b=Math.max(px,sx),far=i>0,mid=far?sx+CW/2:(a+CW+b)/2,y1=far?y+CH:y+CH/2;cards.push({x:sx,y,per:f.sp,cls:f.sp?'':'empty'});
+      if(far)dash.push(`M${fem?sx+CW:sx} ${y+CH/2}h${fem?GX:-GX}`);else{lines.push(`M${a+CW} ${y+CH/2}H${b}`);ev.push([lines.length-1,evOf('m',null,f.fam)])}
+      f.kids.forEach(c=>{const cx=place(c,k+1,kl,y0);kl+=c.w;lines.push(elbow(mid,y1,cx,y+RH-30,y+RH));ev.push([lines.length-1,evOf('k',c.x,f.fam)])})});return px+CW/2};
+    // drzewa układane rzędami (jak tekst), żeby całość miała proporcje ekranu
+  const h=n=>n.h??=1+Math.max(0,...n.fams.flatMap(f=>f.kids.map(h)));
+  roots.sort((a,b)=>w(b)*h(b)-w(a)*h(a));const rowW=Math.max(w(roots[0]),Math.sqrt(roots.reduce((a,n)=>a+n.w*h(n)*RH,0)*1.8));
+  let x=10,y=20,rh=0,W=0;roots.forEach(n=>{if(x>10&&x+n.w>rowW){x=10;y+=rh+60;rh=0}place(n,0,x,y);x+=n.w+GX*2;W=Math.max(W,x);rh=Math.max(rh,h(n)*RH)});
+  // ta sama osoba w dwóch miejscach (dziecko w swoim rodzie + małżonek w innym) → przerywana linia łącząca
+  const by={},links=[];cards.forEach(c=>c.per&&(by[c.per.id]??=[]).push(c));
+  Object.values(by).forEach(cs=>cs.slice(1).forEach(b=>{const a=cs[0],x1=a.x+CW/2,y1=a.y+CH/2,x2=b.x+CW/2,y2=b.y+CH/2,m=Math.min(y1,y2)-200;links.push(`M${x1} ${y1}C${x1} ${m} ${x2} ${m} ${x2} ${y2}`)}));
+  return{cards,lines,dash,ev,links,W:W+20,H:Math.max(...cards.map(c=>c.y))+CH+30,n:new Set(cards.filter(c=>c.per).map(c=>c.per.id)).size};
+}
+// ile pokoleń przodków (w górę) i potomków (w dół) ma osoba – do list „Pokolenia”
+const depthUp=(p,seen=new Set())=>{if(!p||seen.has(p.id))return 0;seen.add(p.id);const f=famsOf(p,'FAMC')[0];return f?1+Math.max(0,...['HUSB','WIFE'].map(t=>depthUp(byId[kid(f,t)?.val],seen))):0};
+const depthDn=(p,seen=new Set())=>{if(!p||seen.has(p.id))return 0;seen.add(p.id);const k=famsOf(p,'FAMS').flatMap(f=>kids(f,'CHIL').map(c=>byId[c.val]));return k.length?1+Math.max(0,...k.map(c=>depthDn(c,seen))):0};
+// widok przodków jak w MyHeritage: osoba po lewej, 5 pokoleń w prawo; karty-pigułki malejące z pokoleniem,
+// tło wg linii dziadków (ojciec ojca / matka ojca / ojciec matki / matka matki), ramka wg płci; „›” = przesuń widok dalej
+var pview=false;const pedExp=new Set(); // rozwinięte gałęzie (id osób), jak „kółko” w MyHeritage
+// 6 pokoleń jak MyHeritage: 0–3 duże karty, 4 średnie, 5 małe; kółko przy małej karcie rozwija w miejscu jej rodziców i dziadków (karty 236×64)
+function layoutPed(id){const U=36,G=6,SZ=[[258,84,'h'],[258,84,'h'],[258,84,'h'],[258,84,'h'],[238,46,'s'],[196,26,'t']],X=[0,145,290,580,870,1140],BG=['#c3edfa','#d5eea6','#fed9d9','#ffeab2'];
+  const cards=[],lines=[],brs=[],ev=[],H=(1<<(G-1))*U,par=p=>{const f=p&&famsOf(p,'FAMC')[0];return f?[byId[kid(f,'HUSB')?.val],byId[kid(f,'WIFE')?.val]]:[]};
+  const hasPar=p=>par(p).some(Boolean);
+  const card=(per,x,yc,[w,h,ps],q,need,cls='')=>{cards.push({x,y:yc-h/2,w,h,per,ps,bg:q<0?'':BG[q],need,cls});return{x,w,yc}};
+  const bracket=(c,y1,y2,x2)=>{const xm=c.x+c.w+22;lines.push(`M${c.x+c.w} ${c.yc}H${xm}M${xm} ${y1}V${y2}M${xm} ${y1}H${x2}M${xm} ${y2}H${x2}`)};
+  // rozwinięta gałąź: rodzice ±80, dziadkowie ±40 wokół karty, kolumny co 268
+  const branch=(per,c,q,depth,chain=[])=>{if(!per||!hasPar(per))return;const open=pedExp.has(per.id);brs.push({x:c.x+c.w+16,y:c.yc-13,id:per.id,open,chain});if(!open||depth>12)return;
+    const M=[236,64,'m'],x1=c.x+c.w+58,[fa,mo]=par(per);bracket({x:c.x,w:c.w+16+26,yc:c.yc},c.yc-80,c.yc+80,x1);ev.push([lines.length-1,evOf('k',per,famsOf(per,'FAMC')[0])]);
+    [[fa,-80,'ojca'],[mo,80,'matkę']].forEach(([pp,dy,nd])=>{const cc=card(pp,x1,c.yc+dy,M,q,nd);if(!pp)return;const [ga,gm]=par(pp);
+      if(ga||gm){bracket(cc,c.yc+dy-40,c.yc+dy+40,x1+268);ev.push([lines.length-1,evOf('k',pp,famsOf(pp,'FAMC')[0])]);[[ga,-40,'ojca'],[gm,40,'matkę']].forEach(([g2,d2,n2])=>{const c2=card(g2,x1+268,c.yc+dy+d2,M,q,n2);if(g2)branch(g2,c2,q,depth+1,[...chain,per.id])})}})};
+  const put=(per,g,i,need)=>{const yc=(i+.5)*H/(1<<g),q=g<1?-1:g<2?(i?2:0):i>>(g-2),c=card(per,X[g],yc,SZ[g],q,need,g?'':'me');
+    if(!per)return;if(g===G-1)return branch(per,c,q,0);const [fa,mo]=par(per);if(!fa&&!mo)return;
+    bracket(c,(2*i+.5)*H/(1<<(g+1)),(2*i+1.5)*H/(1<<(g+1)),X[g+1]);ev.push([lines.length-1,evOf('k',per,famsOf(per,'FAMC')[0])]);put(fa,g+1,2*i,'ojca');put(mo,g+1,2*i+1,'matkę')};
+  put(byId[id],0,0);const xs=cards.map(c=>c.x+c.w),ys=cards.map(c=>c.y),dy=Math.max(0,-Math.min(...ys))+20;
+  cards.forEach(c=>{c.y+=dy;c.x+=20});brs.forEach(b=>{b.y+=dy;b.x+=20});const ln=lines.map(l=>l.replace(/([MHV])(-?[\d.]+)(?: (-?[\d.]+))?/g,(m,k,a,b)=>k==='M'?`M${+a+20} ${+b+dy}`:k==='H'?`H${+a+20}`:`V${+a+dy}`));
+  return{cards,lines:ln,brs,ev,W:Math.max(...xs)+80,H:Math.max(...cards.map(c=>c.y+c.h))+40,ped:true}}
+const pedCard=c=>{const p=c.per,st=`left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;${c.bg?`background:${c.bg}`:''}`;
+  if(!p)return`<div class="c pc p${c.ps} empty" style="${st}">+ Dodaj ${c.need}</div>`;
+  const b=yr(p,'BIRT'),d=yr(p,'DEAT'),yrs=`<small>${b||'?'} - ${d||(kid(p,'DEAT')?'Zmarły':'')}</small>`,
+    dt=c.ps==='h'?(d?`<small>${esc(pdate(sub(p,'BIRT.DATE')?.val)||b||'?')}</small><small>${esc(pdate(sub(p,'DEAT.DATE')?.val)||d)}</small>`:b?`<small>${sex(p)==='F'?'Urodzona':'Urodzony'}: ${b}</small>`:''):c.ps==='t'?'':yrs;
+  return`<div class="c pc p${c.ps} ${c.cls||''} s${sex(p)} ${p.id===sel?'sel':''}" style="${st}" data-id="${p.id}" title="${esc(name(p))}">${c.ps!=='t'?avatar(p):''}<div class="t"><b>${esc(name(p))}</b>${dt}</div></div>`};
+function renderTree(){
+  const L=pview&&!all?layoutPed(cur):all?layoutAll():layout(cur),shown=new Set(L.cards.map(c=>c.per?.id));
+  // jak w MyHeritage: kwadraciki nad osobą = rodzice (rozwiń/zwiń w miejscu), „+” pod osobą = dzieci
+  const hasP=x=>famsOf(x,'FAMC').some(f=>[kid(f,'HUSB'),kid(f,'WIFE')].some(k=>k&&byId[k.val]));
+  const hidP=x=>!all&&hasP(x)&&(expU.has(x.id)||famsOf(x,'FAMC').some(f=>[kid(f,'HUSB'),kid(f,'WIFE')].some(k=>k&&byId[k.val]&&!shown.has(k.val))));
+  const hasK=x=>famsOf(x,'FAMS').some(f=>kids(f,'CHIL').some(k=>byId[k.val]));
+  const hidK=x=>!all&&hasK(x)&&(expD.has(x.id)||famsOf(x,'FAMS').some(f=>kids(f,'CHIL').some(k=>byId[k.val]&&!shown.has(k.val))));
+  $('#main').innerHTML=`<div id="tbar"><button id="hb" title="Wstecz (Alt+←)" ${hist.length?'':'disabled'}>← Wstecz</button><button id="hf" title="Dalej (Alt+→)" ${fwd.length?'':'disabled'}>Dalej →</button><b>${all?`Całe drzewo – ${L.n} z ${indis().length} osób`:esc(name(byId[cur]))}</b><small>${all?'<button id="zx">✕ Zamknij</button>':''}</small>
+   <span style="margin-left:auto"></span><small>Pokolenia w górę:</small><select id="gens">${(m=>Array.from({length:Math.max(m,gens,1)},(_,i)=>i+1).map(g=>`<option value="${g}" ${g===gens?'selected':''}>${g}${g===m?' (max)':''}</option>`).join(''))(depthUp(byId[cur]))}</select><small>w dół:</small><select id="dgens">${(m=>Array.from({length:Math.max(m,dgens,1)},(_,i)=>i+1).map(g=>`<option value="${g}" ${g===dgens?'selected':''}>${g}${g===m?' (max)':''}</option>`).join(''))(depthDn(byId[cur]))}</select>
+   <button id="zout" title="Pomniejsz">−</button><small id="zl">${Math.round(zoomLvl*100)}%</small><button id="zin" title="Powiększ">+</button><button id="zc">Wyśrodkuj</button><label title="Koloruje powiązania wg dowodu: skan aktu / indeks / przekaz / hipoteza" style="font-size:13px;white-space:nowrap"><input type="checkbox" id="evm" ${evMode?'checked':''}> Siła dowodu</label><button id="zf" title="Pokaż całe drzewo na ekranie">⤢ Całe drzewo</button></div>${evMode?(s=>`<div id="evleg" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:6px 16px;font-size:13px;border-bottom:1px solid var(--line)">${Object.keys(EVC).map(k=>`<span><i style="display:inline-block;width:22px;height:4px;background:${EVC[k]};vertical-align:middle;margin-right:5px"></i>${EVT[k]} (${s.c[k]})</span>`).join('')}<b style="margin-left:auto">${s.oldest?`Ciąg aktów sięga do ${s.oldest} r.`:'Brak skanów aktów urodzenia'}</b></div>`)(evStats()):''}
+  <div id="wrap"><div id="tv"><div style="padding:300px 700px;width:max-content"><div id="tin" style="position:relative;width:${L.W}px;height:${L.H}px">
+   <svg width="${L.W}" height="${L.H}" overflow="visible"><path d="${L.lines.join('')}" fill="none" stroke="#999" stroke-width="1"/><path d="${(L.dash||[]).join('')}" fill="none" stroke="#999" stroke-width="1.5" stroke-dasharray="7 5"/>${evMode?(L.ev||[]).map(([i,k])=>`<path d="${L.lines[i]}" fill="none" stroke="${EVC[k]}" stroke-width="3.5" opacity=".9"><title>Dowód: ${EVT[k]}</title></path>`).join(''):''}${L.links?`<path d="${L.links.join('')}" fill="none" stroke="var(--sel)" stroke-width="3" stroke-dasharray="12 8" opacity=".55"/>`:''}</svg>
+   ${L.ped?L.cards.map(pedCard).join('')+L.brs.map(b=>`<span class="pbr ${b.open?'on':''}" data-b="${b.id}" data-ch="${b.chain.join(' ')}" style="left:${b.x}px;top:${b.y}px" title="${b.open?'Zwiń gałąź':'Rozwiń gałąź przodków'}">${b.open?'‹':'›'}</span>`).join(''):L.cards.map(({x,y,per,cls,top})=>per?`<div class="c ${cls} s${kid(per,'SEX')?.val||'U'} ${per.id===sel?'sel':''}" style="left:${x}px;top:${y}px" data-id="${per.id}" title="${esc(name(per))}">
+     ${hidP(per)?`<span class="up ${expU.has(per.id)?'on':''}" title="${expU.has(per.id)?'Zwiń rodziców':'Rozwiń rodziców'}"><i></i><i></i></span>`:''}${hidK(per)?`<span class="dn" title="${expD.has(per.id)?'Zwiń dzieci':'Rozwiń dzieci'}">${expD.has(per.id)?'−':'+'}</span>`:''}${avatar(per)}<div class="t"><b>${esc(cardName(per).n)}</b>${cardName(per).z?`<i>${esc(cardName(per).z)}</i>`:''}<small>${life(per)}</small></div>${aktCnt(per)?`<span class="ak" title="Skany aktów: ${aktCnt(per)}">${aktCnt(per)}</span>`:''}<span class="ed" title="Szybka edycja">✎</span></div>`
+     :`<div class="c empty" style="left:${x}px;top:${y}px">nieznany</div>`).join('')}
+  </div></div></div><div id="panel"></div></div>`;
+  const tv=$('#tv'),inner=$('#tin'),P=[700,300];
+  const goXY=(x,y)=>{tv.scrollLeft=P[0]+x*zoomLvl-tv.clientWidth/2;tv.scrollTop=P[1]+y*zoomLvl-tv.clientHeight/2};
+  const center=()=>{const me=tv.querySelector('.me');if(!me)return fit();goXY(me.offsetLeft+110,me.offsetTop+51)};
+  const setZoom=z=>{const cx=(tv.scrollLeft+tv.clientWidth/2-P[0])/zoomLvl,cy=(tv.scrollTop+tv.clientHeight/2-P[1])/zoomLvl;
+    zoomLvl=Math.round(Math.min(2,Math.max(.02,z))*100)/100;inner.style.zoom=zoomLvl;$('#zl').textContent=Math.round(zoomLvl*100)+'%';goXY(cx,cy)};
+  const pw=()=>$('#panel').style.display==='block'&&innerWidth>900?360:0; // panel zasłania lewą część
+  const fit=()=>{zoomLvl=Math.max(.02,Math.min(1,(tv.clientWidth-pw()-40)/L.W,(tv.clientHeight-40)/L.H));inner.style.zoom=zoomLvl;$('#zl').textContent=Math.round(zoomLvl*100)+'%';
+    tv.scrollLeft=P[0]+L.W/2*zoomLvl-(tv.clientWidth+pw())/2;tv.scrollTop=P[1]+L.H/2*zoomLvl-tv.clientHeight/2};
+  $('#zf').onclick=()=>{if(all)return fit();all=true;zoomLvl=1;render()};if($('#zx'))$('#zx').onclick=()=>{all=false;zoomLvl=1;render()};$('#hb').onclick=back;$('#hf').onclick=forward;if(L.ped)$('#tbar').querySelectorAll('#gens,#dgens,#zf').forEach(e=>{e.style.display='none';e.previousElementSibling?.tagName==='SMALL'&&(e.previousElementSibling.style.display='none')});
+  inner.style.zoom=zoomLvl;
+  // rozwijanie kwadracikami/+: to samo powiększenie, kliknięta karta zostaje w tym samym miejscu ekranu
+  const kv=keepView;keepView=null;const kc=kv&&(tv.querySelector(`.pbr[data-b="${kv.id}"]`)||tv.querySelector(`.c[data-id="${kv.id}"]`));
+  if(kc){const r=kc.getBoundingClientRect();tv.scrollLeft+=r.left-kv.x;tv.scrollTop+=r.top-kv.y;if(kv.br)setTimeout(()=>tv.scrollBy({left:420*zoomLvl,behavior:'smooth'}),50) /* jak MyHeritage: przesuń do nowej gałęzi */}else if(topView){topView=false;const t=Math.min(...L.cards.map(c=>c.y)),row=L.cards.filter(c=>c.y===t);goXY(row[row.length>>1].x+110,t+tv.clientHeight/2/zoomLvl-80)}else if(L.ped){const m=L.cards[0];tv.scrollLeft=P[0]-20;goXY(0,m.y+m.h/2);tv.scrollLeft=P[0]-20}else (L.W*zoomLvl>tv.clientWidth-pw()||L.H*zoomLvl>tv.clientHeight)?fit():center();
+  $('#gens').onchange=e=>{gens=+e.target.value;const top=gens>=depthUp(byId[cur]);if(top){[...expU].forEach(x=>expU.delete(x));if(zoomLvl<.5)zoomLvl=.6;topView=true}render()}; /* maksimum: czytelne powiększenie i widok na najstarsze pokolenie */$('#dgens').onchange=e=>{dgens=+e.target.value;render()};
+  $('#zin').onclick=()=>setZoom(zoomLvl+.1);$('#zout').onclick=()=>setZoom(zoomLvl-.1);$('#zc').onclick=center;$('#evm').onchange=e=>{evMode=e.target.checked;keepView=null;render()};
+  tv.onwheel=e=>{if(e.ctrlKey){e.preventDefault();setZoom(zoomLvl-Math.sign(e.deltaY)*.1)}};
+  // przeciąganie myszą/palcem; ruch >5px = przesuwanie, bez ruchu = klik
+  let d=null;
+  tv.onpointerdown=e=>{if(e.button)return;d={x:e.clientX,y:e.clientY,l:tv.scrollLeft,t:tv.scrollTop,m:false,id:e.pointerId}};
+  tv.onpointermove=e=>{if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;
+    if(!d.m&&Math.hypot(dx,dy)>5){d.m=true;tv.setPointerCapture(d.id);tv.classList.add('drag')}
+    if(d.m){tv.scrollLeft=d.l-dx;tv.scrollTop=d.t-dy}};
+  tv.onpointerup=e=>{const t=d;d=null;tv.classList.remove('drag');if(!t||t.m)return;
+    const pb=e.target.closest('.pbr');if(pb){const i=pb.dataset.b,r=pb.getBoundingClientRect(),o=!pedExp.has(i);if(o){pedExp.clear();(pb.dataset.ch||'').split(' ').filter(Boolean).forEach(x=>pedExp.add(x));pedExp.add(i)}else pedExp.delete(i); /* akordeon: otwarta tylko jedna ścieżka – gałęzie się nie nakładają */keepView={id:i,x:r.left,y:r.top,br:o};return render()}
+    const c=e.target.closest('.c[data-id]');if(!c){showPanel(null);return}
+    // klik = panel z danymi po prawej; dwuklik (też dotykiem) = przejście do drzewa tej osoby
+    const id=c.dataset.id,dbl=lastTap.id===id&&Date.now()-lastTap.t<400;
+    const tg=(S,x)=>{S.has(x)?S.delete(x):S.add(x);lastTap={};const r=c.getBoundingClientRect();keepView={id:x,x:r.left,y:r.top};render()};if(e.target.closest(".up"))return tg(expU,id);if(e.target.closest(".dn"))return tg(expD,id);if(e.target.closest(".ed")){lastTap={};go(id,'profil');ptab='edycja';return render()}if(e.target.closest(".ak")){lastTap={};go(id,'profil');ptab='zdjecia';return render()}
+    if(dbl){lastTap={};return go(id)}
+    lastTap={id,t:Date.now()};showPanel(id)};
+  tv.onpointercancel=()=>{d=null;tv.classList.remove('drag')};
+  if(sel)showPanel(sel);
+}
+// wyszukiwanie osoby w serwisach genealogicznych – adresy sprawdzone ręcznie 12.10.2026 (GET = link, POST = formularz w nowej karcie)
+// ponytail: strony nie pozwalają czytać wyników z innej domeny (CORS, logowanie) – aplikacja otwiera wyszukiwania, czytanie wyników zostaje przy człowieku
+function postSearch(url,data){const f=document.createElement('form');f.method='post';f.action=url;f.target='_blank';
+  Object.entries(data).forEach(([k,v])=>{const i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;f.append(i)});document.body.append(f);f.submit();f.remove()}
+function srcLinks(p){
+  const g=(sub(p,'NAME.GIVN')?.val||name(p).split(' ')[0]).trim(),sn=(sub(p,'NAME.SURN')?.val||name(p).split(' ').pop()).split(/\s+vel\s+/i)[0].trim();
+  const by=+yr(p,'BIRT')||+yr(p,'CHR')||0,pl=(sub(p,'BIRT.PLAC')?.val||sub(p,'DEAT.PLAC')?.val||'').split(/[,(]/)[0].trim();
+  const e=encodeURIComponent,vs=/^gar[sz]*t?z?tka$/i.test(sn)?['Garstka','Garsztka','Garztka']:[sn]; // warianty zapisu w księgach
+  const SWA='_Wyszukiwarka_INSTANCE_EHokej781yb7_';
+  const L=[
+    ...vs.map(v=>[`Geneteka – ${v}`,`https://geneteka.genealodzy.pl/index.php?op=gt&lang=pol&bdm=B&w=07mz&rid=B&search_lastname=${e(v)}&search_name=${e(g)}&from_date=${by?by-10:''}&to_date=${by?by+10:''}`]),
+    ['FamilySearch',`https://www.familysearch.org/search/record/results?q.givenName=${e(g)}&q.surname=${e(sn)}${by?`&q.birthLikeDate.from=${by-5}&q.birthLikeDate.to=${by+5}`:''}`],
+    ['MyHeritage',`https://www.myheritage.pl/research?formId=master&formMode=1&action=query&qname=Name+fn.${e(g)}+ln.${e(sn)}`],
+    ['Geni',`https://www.geni.com/search?search_type=people&names=${e(g+' '+sn)}`],
+    ['Ancestry',`https://www.ancestry.com/search/?name=${e(g)}_${e(sn)}${by?'&birth='+by:''}`],
+    ['Find a Grave',`https://www.findagrave.com/memorial/search?firstname=${e(g)}&lastname=${e(sn)}`],
+    ['Skanoteka (tagi)',`https://skanoteka.genealodzy.pl/?op=tg&imie=&nazwisko=${e(sn)}&miejsce=&rok_od=&rok_do=`],
+    ['IPN – inwentarz',`https://inwentarz.ipn.gov.pl/szukaj?fraza=${e(sn)}`],
+    ['Grobonet (cmentarze)',`https://www.grobonet.com/index.php?page=wyszukiwanie&imie=${e(g)}&nazw=${e(sn)}&wojewodztwo=&miasto=`],
+    ['Szukaj w Archiwach – nazwisko',null,'https://www.szukajwarchiwach.gov.pl/strona_glowna?p_p_id=Wyszukiwarka_INSTANCE_EHokej781yb7&p_p_lifecycle=1&p_p_state=normal&p_p_mode=view&_Wyszukiwarka_INSTANCE_EHokej781yb7_javax.portlet.action=redirectToSearch',{[SWA+'keywords']:sn}],
+    ...(pl?[['Szukaj w Archiwach – '+pl,null,'https://www.szukajwarchiwach.gov.pl/strona_glowna?p_p_id=Wyszukiwarka_INSTANCE_EHokej781yb7&p_p_lifecycle=1&p_p_state=normal&p_p_mode=view&_Wyszukiwarka_INSTANCE_EHokej781yb7_javax.portlet.action=redirectToSearch',{[SWA+'keywords']:pl}]]:[]),
+    ['BaSIA (Wielkopolska)',null,'https://www.basia.famula.pl/',{q:sn}],
+    ['Lubgens – indeksy',null,'https://regestry.lubgens.eu/viewpage.php?page_id=1057',{urodz:1,sluby:1,zgony:1,parafia:'',nazwisko:sn,wildmode:1,imie:g,rok_od:'',rok_do:'',sort1:1,sort2:3,sort3:5}]];
+  window._src=L;const st='font-size:12px;padding:3px 8px;border:1px solid var(--line);border-radius:12px;text-decoration:none;background:none;cursor:pointer;color:inherit';
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px">${L.map(([t,u],i)=>u?`<a href="${esc(u)}" target="_blank" rel="noopener" style="${st}">${esc(t)}</a>`:`<button style="${st}" onclick="postSearch(_src[${i}][2],_src[${i}][3])">${esc(t)}</button>`).join('')}</div>
+   <small class="mut">Każdy przycisk otwiera wyszukiwanie w nowej karcie. Geneteka: woj. mazowieckie, urodzenia ±10 lat${by?` od ${by}`:''} – śluby/zgony przełączysz na stronie. FamilySearch pokazuje wszystko po zalogowaniu.</small>`}
+// klik w krewnego w panelu: pokaż go w drzewie (przewiń do karty; gdy go nie widać – ustaw drzewo na niego) + jego dane w panelu
+function relClick(id){const c=document.querySelector(`#tv .c[data-id="${id}"]`);
+  if(!c){go(id);showPanel(id);return}const tv=$('#tv'),r=c.getBoundingClientRect(),t=tv.getBoundingClientRect();
+  tv.scrollBy({left:r.left+r.width/2-(t.left+t.width/2),top:r.top+r.height/2-(t.top+t.height/2),behavior:'smooth'});showPanel(id)}
+function showPanel(id){
+  sel=id;document.querySelectorAll('#tv .c.sel').forEach(c=>c.classList.remove('sel'));const pn=$('#panel');pn.onkeydown=null;
+  if(!id){pn.style.display='none';return}
+  document.querySelector(`#tv .c[data-id="${id}"]`)?.classList.add('sel');
+  const p=byId[id],add=(k,l)=>`<button onclick="addRelative('${id}','${k}')">+ ${l}</button>`;
+  const rel=(x,m,f,u)=>sex(x)==='M'?m:sex(x)==='F'?f:u;
+  // krewni w panelu: klik = dane tej osoby w panelu (jak w MyHeritage)
+  const row=(x,r)=>`<div class="fam" onclick="relClick('${x.id}')">${avatar(x)}<div><b>${esc(name(x))}</b><br><small>${r} · ${life(x)}</small></div></div>`;
+  const kv=(l,v)=>v?`<span class="mut">${l}</span><span>${esc(v)}</span>`:'';
+  const note=kids(p,'NOTE').map(n=>noteTxt(n.val)).join('\n').trim();
+  const fam=[...parentsOf(p).map(x=>row(x,rel(x,'Ojciec','Matka','Rodzic'))),
+    ...famsOf(p,'FAMS').map(f=>spouseIn(f,id)).filter(Boolean).map(x=>row(x,rel(x,'Mąż','Żona','Małżonek'))),
+    ...siblingsOf(p).map(x=>row(x,rel(x,'Brat','Siostra','Rodzeństwo'))),
+    ...childrenOf(p).map(x=>row(x,rel(x,'Syn','Córka','Dziecko')))].join('');
+  pn.innerHTML=`<button class="x" onclick="showPanel(null)" title="Zamknij (Esc)">×</button>
+   <div style="text-align:center">${avatar(p,'big')}<h3 style="margin:8px 0 2px">${esc(name(p))}</h3><small>${life(p)}</small></div>
+   <div class="row" style="margin:12px 0;justify-content:center"><button class="pri" onclick="go('${id}','profil')">Profil</button>${id===cur?'':`<button onclick="go('${id}')">Pokaż jego drzewo</button>`}<button onclick="panelEdit('${id}')">Edytuj</button></div>
+   <h4>Dane</h4><div class="kv">${kv('Urodzenie',pdate(ev(p,'BIRT')))}${kv('Chrzest',pdate(ev(p,'CHR')))}${kv('Zgon',pdate(ev(p,'DEAT')))}${kv('Pochówek',pdate(ev(p,'BURI')))}${famsOf(p,'FAMS').map(f=>{const sp=spouseIn(f,id),m=pdate(ev(f,'MARR'));return m?kv('Ślub',`${m}${sp?' – z '+name(sp):''}`):''}).join('')}${kv('Zawód',kids(p,'OCCU').map(o=>o.val).join(', '))}
+     ${kv('Płeć',{M:'mężczyzna',F:'kobieta'}[sex(p)]||'nieznana')}${kv('Zdjęcia',kids(p,'OBJE').length||'')}${kv('Źródła',kids(p,'SOUR').length||'')}</div>
+   ${note?`<h4>Notatki</h4><div class="note" style="font-size:13px;max-height:140px;overflow:auto">${esc(note)}</div>`:''}
+   <h4>Szukaj w źródłach</h4>${srcLinks(p)}
+   <h4>Najbliższa rodzina</h4>${fam||'<small>Brak wpisanych krewnych.</small>'}
+   <h4>Dodaj krewnego</h4><div class="grid2">${add('father','ojca')}${add('mother','matkę')}${add('brother','brata')}${add('sister','siostrę')}${add('son','syna')}${add('daughter','córkę')}${add(sex(p)==='F'?'husband':'wife',sex(p)==='F'?'męża':'żonę')}</div>`;
+  pn.style.display='block';pn.scrollTop=0;
+}
+
+// edycja w panelu: Enter = zapisz, Esc = anuluj; po zapisie panel wraca do podglądu tej osoby
+function panelEdit(id){const pn=$('#panel'),p=byId[id];sel=id;
+  pn.innerHTML=`<button class="x" onclick="showPanel('${id}')" title="Anuluj (Esc)">×</button>
+   <div class="row" style="margin-bottom:12px">${avatar(p)}<div><b>Edycja</b><br><small>${esc(name(p))}</small></div></div>${editForm(p,`showPanel('${id}')`,true)}`;
+  pn.style.display='block';pn.scrollTop=0;
+  pn.onkeydown=e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();saveP(id)}if(e.key==='Escape'){e.stopPropagation();showPanel(id)}};
+  $('#e_g').focus()}
+
+// ======== profil (jak MyHeritage) ========
+function facts(p){
+  const by=+yr(p,'BIRT'),out=[];
+  const push=(y,title,body,order)=>out.push({y,title,body,order});
+  const plk=(pl,y)=>pl?`<span class="lnk plac" data-pl="${esc(pl)}" data-y="${y||''}" title="Pokaż na mapie z tamtej epoki">${esc(pl)} 🗺</span>`:'';
+  const evf=(t,title)=>{const e=kid(p,t);if(e)push(+yr(p,t)||null,title,[esc(pdate(sub(e,'DATE')?.val)),plk(sub(e,'PLAC')?.val,+yr(p,t))].filter(Boolean).join('<br>'),t==='BIRT'?0:t==='DEAT'?8:t==='BURI'?9:5)};
+  evf('BIRT','Narodziny');evf('CHR','Chrzest');
+  famsOf(p,'FAMS').forEach(f=>{const sp=spouseIn(f,p.id),m=kid(f,'MARR'),y=+((sub(f,'MARR.DATE')?.val||'').match(/\d{4}/)?.[0])||null;
+    push(y,'Ślub z',`${sp?`<span class="lnk" onclick="go('${sp.id}','profil')">${esc(name(sp))}</span>`:'nieznany'}${m?'<br>'+[esc(pdate(sub(m,'DATE')?.val)),plk(sub(m,'PLAC')?.val,y)].filter(Boolean).join(' • '):''}`,2);
+    kids(f,'CHIL').map(c=>byId[c.val]).filter(Boolean).forEach(c=>push(+yr(c,'BIRT')||null,`Urodziny ${sex(c)==='F'?'córki':sex(c)==='M'?'syna':'dziecka'}`,`<span class="lnk" onclick="go('${c.id}','profil')">${esc(name(c))}</span><br>${esc(pdate(ev(c,'BIRT')))}`,3))});
+  kids(p,'OCCU').forEach(o=>push(null,'Zawód',esc(o.val),4));kids(p,'RESI').forEach(r=>push(+((sub(r,'DATE')?.val||'').match(/\d{4}/)?.[0])||null,'Zamieszkanie',esc([pdate(sub(r,'DATE')?.val),sub(r,'PLAC')?.val].filter(Boolean).join(' • ')),4));
+  evf('DEAT','Śmierć');evf('BURI','Pochówek');
+  // bez roku: narodziny na początku, zgon/pochówek na końcu, reszta zaraz po narodzinach
+  const key=f=>f.y??(f.order===0?-1e9:f.order>=8?1e9:(by||-1e9)+.5);
+  out.sort((a,b)=>key(a)-key(b)||a.order-b.order);
+  return out.map(f=>`<div class="fact"><div class="y">${f.y||''}${f.y&&by&&f.y!==by?(f.y-by<0||((f.order===2||f.order===3)&&f.y-by<14)?`<small style="color:#c33" title="Sprawdź daty – zbyt młody wiek lub zdarzenie przed narodzinami">⚠ wiek ${f.y-by}</small>`:`<small>Wiek: ${f.y-by}</small>`):''}</div><div><b>${f.title}</b><br>${f.body||''}</div></div>`).join('');
+}
+// formularz edycji – ten sam w profilu i w panelu drzewa (pola #e_* czyta saveP)
+function editForm(p,cancel,panel){const id=p.id,note=kids(p,'NOTE').map(n=>noteTxt(n.val)).join('\n\n');
+  const f=(l,i,v)=>`<b>${l}</b><input id="${i}" value="${esc(v)}">`;
+  const two=(l,a,b,t,n=p)=>`<b>${l}</b><div class="row" style="flex-wrap:${panel?'wrap':'nowrap'}"><input id="${a}" placeholder="data, np. ABT 1745" value="${esc(sub(n,t+'.DATE')?.val||'')}" style="flex:1;min-width:0"><input id="${b}" placeholder="miejsce" value="${esc(sub(n,t+'.PLAC')?.val||'')}" style="flex:2;min-width:0"></div>`;
+  // śluby: jedno pole daty+miejsca na każdy związek
+  const marr=famsOf(p,'FAMS').map((f,i)=>{const sp=spouseIn(f,id);
+    return two(`Ślub<br><small style="font-weight:400">z ${esc(sp?name(sp):'nieznanym')}</small>`,`e_m${i}d`,`e_m${i}p`,'MARR',f)}).join('');
+  return `<div class="form" ${panel?'style="grid-template-columns:72px 1fr;font-size:13px"':''}>
+   ${f('Imiona','e_g',sub(p,'NAME.GIVN')?.val??(sub(p,'NAME')?.val||'').split('/')[0].trim())}${f('Nazwisko','e_s',sub(p,'NAME.SURN')?.val??((sub(p,'NAME')?.val||'').split('/')[1]||'').trim())}
+   <b>Płeć</b><select id="e_x">${[['M','mężczyzna'],['F','kobieta'],['U','nieznana']].map(([v,l])=>`<option value="${v}" ${sex(p)===v?'selected':''}>${l}</option>`).join('')}</select>
+   ${two('Urodzenie','e_bd','e_bp','BIRT')}${two('Zgon','e_dd','e_dp','DEAT')}${two('Pochówek','e_ud','e_up','BURI')}
+   ${marr}${f('Zawód','e_o',kids(p,'OCCU').map(o=>o.val).join(', '))}<b>Notatka</b><textarea id="e_n" rows="${panel?4:6}">${esc(note)}</textarea></div>
+   <p><small>Daty jak w MyHeritage: 5 JAN 1823, ABT 1745 (około), BEF 1800 (przed), AFT 1790 (po).</small></p>
+   <div class="row"><button class="pri" onclick="saveP('${id}')">Zapisz</button><button onclick="${cancel}">Anuluj</button><button style="margin-left:auto;color:#c33" onclick="delP('${id}')">Usuń osobę</button></div>`}
+function famRow(x,rel){return `<div class="fam" onclick="go('${x.id}','profil')">${avatar(x)}<div><b>${esc(name(x))}</b><br><small>${rel} · ${life(x)}</small></div></div>`}
+function renderProfile(){
+  const p=byId[cur],id=cur,note=kids(p,'NOTE').map(n=>noteTxt(n.val)).join('\n\n');
+  const rel=(x,m,f,u)=>sex(x)==='M'?m:sex(x)==='F'?f:u;
+  const srcs=kids(p,'SOUR').map(s=>{const pg=sub(s,'PAGE')?.val||'',t=sub(s,'DATA.TEXT')?.val||(byId[s.val]&&sub(byId[s.val],'TITL')?.val)||'';
+    return `<div class="fact" style="grid-template-columns:1fr"><div>${/^https?:/.test(pg)?`<a href="${esc(pg)}" target="_blank">${esc(t||pg)}</a>`:esc(pg+' '+t)}</div></div>`}).join('');
+  const ms=other?matches(p):[];
+  const T={szczegoly:'Szczegóły',zdjecia:`Zdjęcia (${kids(p,'OBJE').length})`,zrodla:`Źródła (${kids(p,'SOUR').length})`,...(other?{dopasowania:`Dopasowania (${ms.length})`}:{}),historia:'Na tle historii',szukaj:'Gdzie szukać?',akt:'Odczytaj akt',edycja:'Edytuj'};
+  if(!T[ptab])ptab='szczegoly';
+  let body='';
+  if(ptab==='szczegoly')body=`<div><div class="box"><h2>Fakty</h2>${facts(p)||'<small>Brak faktów.</small>'}</div>
+     ${note?`<div class="box" style="margin-top:20px"><h2>Biografia i notatki</h2><div class="note">${esc(note)}</div></div>`:''}</div>
+    <div class="box"><h2>Najbliższa rodzina</h2>
+     ${parentsOf(p).map(x=>famRow(x,rel(x,'Jego/Jej ojciec','Jego/Jej matka','Rodzic'))).join('')}
+     ${famsOf(p,'FAMS').map(f=>spouseIn(f,id)).filter(Boolean).map(x=>famRow(x,rel(x,'Mąż','Żona','Małżonek'))).join('')}
+     ${siblingsOf(p).map(x=>famRow(x,rel(x,'Brat','Siostra','Rodzeństwo'))).join('')}
+     ${childrenOf(p).map(x=>famRow(x,rel(x,'Syn','Córka','Dziecko'))).join('')}
+     ${!parentsOf(p).length&&!childrenOf(p).length&&!siblingsOf(p).length?'<small>Brak krewnych.</small>':''}
+     <h2 style="margin-top:16px;font-size:15px">Dodaj krewnego</h2><div class="row">${Object.entries({father:'ojca',mother:'matkę',brother:'brata',sister:'siostrę',son:'syna',daughter:'córkę',[sex(p)==='F'?'husband':'wife']:sex(p)==='F'?'męża':'żonę'}).map(([k,l])=>`<button onclick="addRelative('${id}','${k}')">+ ${l}</button>`).join('')}</div></div>`;
+  if(ptab==='zdjecia')body=`<div class="box" style="grid-column:1/-1"><h2>Zdjęcia</h2>
+     ${kids(p,'OBJE').map((o,i)=>{const f=sub(o,'FILE')?.val;return f?`<div class="ph"><img src="${esc(f)}" onclick="openImg(this.src)" onerror="this.style.opacity=.2"><small>${esc((sub(o,'TITL')?.val||'').slice(0,40))}</small><br>
+       ${i?`<button onclick="mainPhoto('${id}',${i})">★ ustaw jako główne</button>`:'<small>★ zdjęcie główne</small>'}<button onclick="delPhoto('${id}',${i})">usuń</button></div>`:''}).join('')||'<p><small>Brak zdjęć.</small></p>'}
+     <div><button class="pri" onclick="$('#phin').click()">+ Dodaj zdjęcia z dysku</button><input id="phin" type="file" accept="image/*" multiple hidden onchange="addPhotos('${id}',this.files)"></div></div>`;
+  if(ptab==='zrodla')body=`<div class="box" style="grid-column:1/-1"><h2>Źródła</h2>${srcs||'<small>Brak źródeł.</small>'}</div>`;
+  if(ptab==='dopasowania')body=`<div style="grid-column:1/-1">${matchCard(p)}</div>`;
+  if(ptab==='historia')body=`<div class="box" style="grid-column:1/-1"><h2>Życie na tle historii</h2>${histTab(p)}</div>`;
+  if(ptab==='szukaj')body=`<div class="box" style="grid-column:1/-1"><h2>Gdzie szukać dalej?</h2>${whereTab(p)}</div>`;
+  if(ptab==='akt')body=`<div class="box" style="grid-column:1/-1"><h2>Odczytaj akt (Claude)</h2>${aktTab(p)}</div>`;
+  if(ptab==='edycja')body=`<div class="box" style="grid-column:1/-1"><h2>Edytuj dane</h2>${editForm(p,"ptab='szczegoly';render()")}</div>`;
+  $('#main').innerHTML=`<div class="phead">${avatar(p)}<div style="flex:1;min-width:220px"><h1>${esc(name(p))}</h1>
+     ${ev(p,'BIRT')?`<div>✳ Urodzony/a: ${esc(pdate(ev(p,'BIRT')))}</div>`:''}${ev(p,'DEAT')?`<div>✝ Zmarł/a: ${esc(pdate(ev(p,'DEAT')))}</div>`:''}${ev(p,'BURI')?`<div><small>Pochówek: ${esc(ev(p,'BURI'))}</small></div>`:''}</div>
+     <div class="row"><button onclick="go('${id}','drzewo')">Pokaż w drzewie</button><button onclick="ptab='edycja';render()">Edytuj</button></div></div>
+   <div class="ptabs">${Object.entries(T).map(([k,l])=>`<span class="${k===ptab?'on':''}" onclick="ptab='${k}';render()">${l}</span>`).join('')}</div>
+   <div class="pbody">${body}</div>`;
+}
+
+// ======== lista osób ========
+// ======== mapa: gdzie żyły osoby, kolor = pokolenie względem wybranej osoby ========
+// współrzędne: GEO (wbudowane) + cache przeglądarki; nowe miejsca dociągane z OpenStreetMap (1 zapytanie/s)
+var GEO={}; // współrzędne miejscowości z drzewa: wczytywane z lokalnego geo.json (prywatny, poza repozytorium)
+fetch('geo.json').then(r=>r.ok?r.json():{}).then(g=>{Object.assign(GEO,g);if(view==='mapa')render()}).catch(()=>{});var geoC={};try{geoC=JSON.parse(localStorage.getItem('geo')||'{}')}catch(e){}
+var geoFix={};try{geoFix=JSON.parse(localStorage.getItem('geofix')||'{}')}catch(e){}
+var geo=p=>!/^\s*(poland|polska|polen|usa|niemcy|germany)\s*$/i.test(p)&&(geoFix[p]||GEO[p]||geoC[p]); // ręczna poprawka > wbudowane > pobrane
+var movePl=null; // „Popraw położenie”: następny klik na mapie ustawia punkt
+function startMove(pl){movePl=pl;lmap.closePopup();$('#map').style.cursor='crosshair';$('#movemsg').style.display='block';$('#movemsg').innerHTML=`Kliknij na mapie właściwe miejsce dla: <b>${esc(pl)}</b> <button onclick="movePl=null;this.parentNode.style.display='none';$('#map').style.cursor=''">Anuluj</button>`} // sam kraj = brak konkretnego miejsca
+// mapy z epoki: WMS IH PAN (Atlas Fontium); „auto” = najbliższa mapa dla roku z suwaka
+const EPOKI=[{k:'auto',t:'Automatycznie wg roku'},{k:'1580',t:'XVI w. – ziemie Korony',l:'ahp_ziemie_polskie_3857',y:1700},{k:'1802',t:'1802 – mapa Gilly’ego (Mazowsze)',l:'gilly_3857',y:1822},
+  {k:'1845',t:'1840–1855 – Kwatermistrzostwo / Galicja',l:'TKKP_126k_3857,kummersberg_3857',y:1865},{k:'1880',t:'ok. 1880 – mapa Reymanna',l:'reymann_3857',y:1905},
+  {k:'1915',t:'1914–1921 – Karte des westl. Russlands',l:'kdwr_3857',y:1925},{k:'1935',t:'1918–1939 – mapa WIG',l:'wig100k_3857',y:1960},{k:'dzis',t:'Dziś'}];
+var mapEpoch='auto',mapKeep=false,mapOpac=1,histLayer=null;const epokaFor=y=>mapEpoch!=='auto'?EPOKI.find(e=>e.k===mapEpoch):EPOKI.slice(1).find(e=>!e.y||y<=e.y);
+// klik w miejscowość w profilu: mapa w roku wydarzenia, z mapą z tej epoki
+function mapAt(pl,y){view='mapa';if(y)mapYear=y;mapEpoch='auto';mapFocus=geo(pl)||null;render()}
+document.addEventListener('click',e=>{const t=e.target.closest('.plac');if(t)mapAt(t.dataset.pl,+t.dataset.y||0)});
+var anim=null,mview=null,lmap=null,mapGen=new Set(),geoBusy=false,mapYear=null,showMig=true,mapFocus=null;
+function gensFrom(id){const g={[id]:0},q=[id];while(q.length){const x=q.shift(),p=byId[x],n=g[x];
+  for(const[y,d]of[...parentsOf(p).map(y=>[y,1]),...childrenOf(p).map(y=>[y,-1]),...famsOf(p,'FAMS').map(f=>[spouseIn(f,x),0])])if(y&&!(y.id in g)){g[y.id]=n+d;q.push(y.id)}}return g}
+var genName=n=>n===0?'pokolenie osoby':n>0?(['','rodzice','dziadkowie','pradziadkowie'][n]||`${n-2}× pradziadkowie`):(['','dzieci','wnuki','prawnuki'][-n]||`${-n-2}× prawnuki`);
+var genCol=n=>`hsl(${(n*47+200)%360} 70% 45%)`;
+function renderMap(){
+  const G=gensFrom(cur),pts={},miss=new Set();
+  const yy=p=>+(yr(p,'BIRT')||yr(p,'CHR')||yr(p,'BAPM')||(yr(p,'DEAT')&&yr(p,'DEAT')-40))||null,bpl=p=>['BIRT','CHR','BAPM'].map(t=>kid(kid(p,t),'PLAC')?.val?.trim()).find(Boolean);
+  const ys=indis().filter(p=>p.id in G).map(yy).filter(Boolean),y0=Math.min(...ys),y1=Math.max(...ys);if(mapYear===null||mapYear>y1)mapYear=y1;
+  const vis=p=>yy(p)?yy(p)<=mapYear:mapYear>=y1; // bez daty – tylko w pełnym widoku
+  // migracje: miejsce urodzenia rodzica → miejsce urodzenia dziecka
+  const mig=[];indis().forEach(c=>{if(!(c.id in G)||!vis(c))return;const to=bpl(c);if(!to||!geo(to))return;const pa=parentsOf(c).find(x=>bpl(x)&&geo(bpl(x)));const from=pa&&bpl(pa);
+    if(from&&from.toLowerCase()!==to.toLowerCase()&&geo(from).join()!==geo(to).join())mig.push({c,from,to,y:yy(c),g:G[c.id]})});
+  mig.sort((a,b)=>(a.y||9999)-(b.y||9999));
+  // szlak nazwiska: miejsca urodzeń osób o nazwisku wybranej osoby, od najstarszych lat (pierwsze 4 litery rdzenia: Garstka/Garztka/Garsztka)
+  const sn=(sub(byId[cur],'NAME.SURN')?.val||name(byId[cur]).split(' ').pop()).toLowerCase().replace(/[^a-ząćęłńóśźż]/g,'').slice(0,3),tr={};
+  indis().forEach(p=>{const s2=(sub(p,'NAME.SURN')?.val||'').toLowerCase();const y=+(yr(p,'BIRT')||yr(p,'CHR')),pl=bpl(p);if(!sn||!s2.startsWith(sn)||!y||!pl)return;
+    const k=geo(pl)?geo(pl).join():pl.toLowerCase();const t=tr[k]??={pl,a:y,b:y,n:0};t.a=Math.min(t.a,y);t.b=Math.max(t.b,y);t.n++});
+  const trail=Object.values(tr).sort((a,b)=>a.a-b.a);
+  indis().forEach(p=>{if(!(p.id in G)||!vis(p))return;['BIRT','CHR','BAPM','RESI','DEAT','BURI'].forEach(t=>kids(p,t).forEach(e=>{const pl=kid(e,'PLAC')?.val?.trim();if(!pl)return;
+    if(!geo(pl)){miss.add(pl);return}const k=pl+'|'+G[p.id];(pts[k]??={pl,g:G[p.id],ps:new Map()}).ps.set(p.id,p)}))});
+  const gl=[...new Set(Object.values(pts).map(x=>x.g))].sort((a,b)=>b-a);if(!mapGen.size)gl.forEach(g=>mapGen.add(g));
+  $('#main').innerHTML=`<div id="tbar"><b>Mapa – ${esc(name(byId[cur]))}</b><small>kolor = pokolenie względem tej osoby</small><span style="margin-left:auto"></span>
+    ${miss.size?`<button id="geob">${geoBusy?'Szukam współrzędnych…':`Znajdź na mapie ${miss.size} miejsc`}</button>`:''}</div>
+   <div id="wrap" style="display:flex;flex:none;height:calc(100vh - 125px);overflow:hidden"><div id="leg" style="width:260px;flex:none;overflow:auto;padding:10px;border-right:1px solid var(--line);background:var(--card)">
+    <p style="margin:0 0 8px"><b>Mapa z epoki</b><br><select id="epoka" style="width:100%">${EPOKI.map(e=>`<option value="${e.k}" ${e.k===mapEpoch?'selected':''}>${e.t}</option>`).join('')}</select><small>Teraz: <b>${epokaFor(mapYear).t}</b> (rok ${mapYear})</small>${epokaFor(mapYear).l?`<br><small>Dziś</small> <input type="range" id="opac" min="0" max="100" value="${Math.round(mapOpac*100)}" style="width:62%;vertical-align:middle" title="Przezroczystość starej mapy – przesuń, by porównać z dzisiejszą"> <small>dawniej</small>`:''}</p>
+    ${gl.map(g=>`<label class="row" style="gap:6px;margin:4px 0"><input type="checkbox" data-g="${g}" ${mapGen.has(g)?'checked':''}><i style="width:12px;height:12px;border-radius:50%;background:${genCol(g)}"></i>${g>0?'+':''}${g} ${genName(g)}</label>`).join('')}
+    <p><small><a href="#" id="gall">wszystkie</a> · <a href="#" id="gnone">żadne</a></small></p>
+    <p style="margin:6px 0"><b>Osiedlanie rodu</b><br>${selS('srn',surnameList().map(s=>[s.k,`${s.t} (${s.n})`]),srnKey).replace('data-a="srn"','id="srn" style="width:100%"')}<br><select id="spd" style="width:48%">${[[900,'bardzo wolno'],[500,'wolno'],[250,'średnio'],[100,'szybko']].map(([v,t])=>`<option value="${v}" ${v==srnSpd?'selected':''}>${t}</option>`).join('')}</select> <button id="splay" style="width:48%">${sAnim?'⏹ Stop':'▶ Animacja urodzeń'}</button><br><small>urodzenia osób o tym nazwisku rok po roku, do ostatniego pokolenia</small></p>
+    <p><button id="play" style="width:100%;margin-bottom:6px">${anim?'⏸ Zatrzymaj':'▶ Animacja migracji w czasie'}</button><b style="font-size:${anim?22:14}px">Do roku: <span id="yv">${mapYear}</span></b><br><input type="range" id="yr" min="${y0}" max="${y1}" value="${mapYear}" style="width:100%"><small>${y0}–${y1}; przesuń, by zobaczyć jak rodzina się rozchodziła</small></p>
+    ${trail.length?`<p style="margin:8px 0 4px"><b>Szlak nazwiska ${esc(sub(byId[cur],'NAME.SURN')?.val||'')}</b><br><small>miejsca urodzeń wg lat (skąd i kiedy)</small></p>
+     <div style="font-size:12px;margin-bottom:10px">${trail.map((t,i)=>`<div data-t="${i}" style="cursor:pointer" title="Pokaż na mapie w latach ${t.a}${t.b>t.a?'–'+t.b:''}"><b>${t.a}${t.b>t.a?'–'+t.b:''}</b> ${esc(t.pl)} <small>(${t.n} os.)</small></div>`).join('')}</div>`:''}
+    <label class="row" style="gap:6px"><input type="checkbox" id="smig" ${showMig?'checked':''}> <b>Migracje (${mig.length})</b></label>
+    <small>strzałka: miejsce urodzenia rodzica → dziecka</small>
+    <div style="font-size:12px;margin-top:6px">${mig.map(m=>`<div style="margin:3px 0;cursor:pointer" data-m="${m.c.id}"><b>${m.y||'?'}</b> ${esc(m.from)} → ${esc(m.to)}<br><small>${esc(name(m.c))}</small></div>`).join('')}</div></div><div style="flex:1;position:relative"><div id="map" style="position:absolute;inset:0"></div><div id="movemsg" style="display:none;position:absolute;top:10px;left:60px;z-index:1000;background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 1px 6px #0004"></div><div id="panel" style="left:auto;right:12px;z-index:1000"></div></div></div>`;
+  if(lmap){mview=[lmap.getCenter(),lmap.getZoom()];lmap.remove();lmap=null}
+  if(!window.L){$('#map').innerHTML='<p style="padding:20px">Brak połączenia z internetem – mapa niedostępna.</p>';return}
+  lmap=L.map('map').setView([52.45,19.7],8);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'© Esri, OpenStreetMap'}) /* kafelki OSM blokują otwarcie z pliku/localhost (Access blocked) */.addTo(lmap);
+  {const ep=epokaFor(mapYear);histLayer=null;if(ep.l)histLayer=L.tileLayer.wms('https://pastmaps.cenagis.edu.pl/geoserver/ihpan/wms',{layers:ep.l,format:'image/png',transparent:true,version:'1.1.1',maxZoom:18,opacity:mapOpac,attribution:'Mapy historyczne: IH PAN – Atlas Fontium'}).addTo(lmap)}
+  const b=[];Object.values(pts).filter(x=>mapGen.has(x.g)).sort((a,b)=>b.g-a.g).forEach(({pl,g,ps})=>{const[la,lo]=geo(pl),o=(gl.indexOf(g)-gl.length/2)*.004;b.push([la,lo]);
+    L.circleMarker([la+o,lo+o],{radius:5+Math.min(12,Math.sqrt(ps.size)*3),color:'#fff',weight:1,fillColor:genCol(g),fillOpacity:.85}).addTo(lmap)
+     .bindPopup(`<b>${esc(pl)}</b><br><small>${genName(g)}</small><br>${[...ps.values()].map(p=>`<a href="#" onclick="showPanel('${p.id}');return false">${esc(name(p))}</a> <small>${life(p)}</small>`).join('<br>')}<br><button style="margin-top:6px;font-size:12px" onclick="startMove(decodeURIComponent('${encodeURIComponent(pl)}'))">📍 Popraw położenie</button>`)});
+  const ml={};if(showMig)mig.forEach(m=>{const a=geo(m.from),z=geo(m.to),col=`hsl(${240-240*((m.y||y1)-y0)/Math.max(1,y1-y0)} 80% 45%)`;
+    const ln=L.polyline([a,z],{color:col,weight:2.5,opacity:.8,dashArray:'6 4'}).addTo(lmap).bindPopup(`<b>${m.y||'?'}</b>: ${esc(m.from)} → ${esc(m.to)}<br><a href="#" onclick="showPanel('${m.c.id}');return false">${esc(name(m.c))}</a>`);
+    const ang=Math.atan2(z[0]-a[0],z[1]-a[1])*180/Math.PI;L.marker(z,{interactive:false,icon:L.divIcon({className:'',iconSize:[14,14],iconAnchor:[7,7],html:`<div style="color:${col};font-size:14px;transform:rotate(${-ang}deg)">➤</div>`})}).addTo(lmap);ml[m.c.id]=ln});
+  // ruch osób: w animacji kropka płynie z miejsca urodzenia do miejsca zgonu
+  if(anim){const pl=(p,t)=>kid(kid(p,t),'PLAC')?.val?.trim();indis().forEach(p=>{if(!(p.id in G))return;const b=by_(p),d=dy_(p),a=pl(p,'BIRT'),z=pl(p,'DEAT')||pl(p,'BURI');
+    if(!b||!d||!a||!z||!geo(a)||!geo(z)||mapYear<b||mapYear>d)return;const k=(mapYear-b)/Math.max(1,d-b),A=geo(a),Z=geo(z);
+    L.circleMarker([A[0]+(Z[0]-A[0])*k,A[1]+(Z[1]-A[1])*k],{radius:4,color:'#000',weight:1,fillColor:genCol(G[p.id]),fillOpacity:1}).addTo(lmap).bindTooltip(name(p))})}
+  if(mview&&(anim||mapKeep))lmap.setView(mview[0],mview[1],{animate:false});else if(b.length)lmap.fitBounds(b,{padding:[30,30],maxZoom:11});mapKeep=false;
+  // animacja: rok po roku (co 5 lat), widok mapy zostaje
+  $('#play').onclick=()=>{if(anim){clearInterval(anim);anim=null;return renderMap()}if(mapYear>=y1)mapYear=y0;
+    anim=setInterval(()=>{if(view!=='mapa'||mapYear>=y1){clearInterval(anim);anim=null;if(view==='mapa')renderMap();return}mapYear=Math.min(y1,mapYear+5);renderMap()},700);renderMap()};
+  lmap.on('click',e=>{if(!movePl)return;geoFix[movePl]=[+e.latlng.lat.toFixed(4),+e.latlng.lng.toFixed(4)];try{localStorage.setItem('geofix',JSON.stringify(geoFix))}catch(x){}movePl=null;$('#map').style.cursor='';mapKeep=true;renderMap()});
+  if(mapFocus){lmap.setView(mapFocus,11);L.circle(mapFocus,{radius:2500,color:'#e8590c',weight:3,fill:false}).addTo(lmap);mapFocus=null}
+  // szlak nazwiska: klik = rok końca okresu i przybliżenie na tę miejscowość
+  document.querySelectorAll('#leg [data-t]').forEach(d=>d.onclick=()=>{const t=trail[+d.dataset.t];mapYear=t.b;mapFocus=geo(t.pl)||null;renderMap()});
+  $('#yr').oninput=e=>$('#yv').textContent=e.target.value;$('#yr').onchange=e=>{mapYear=+e.target.value;renderMap()};$('#smig').onchange=e=>{showMig=e.target.checked;renderMap()};if($('#opac'))$('#opac').oninput=e=>{mapOpac=e.target.value/100;histLayer?.setOpacity(mapOpac)}; /* płynnie, bez przerysowania mapy */
+  if(!srnKey)srnKey=$('#srn')?.value||'';$('#srn').onchange=e=>{srnKey=e.target.value};$('#spd').onchange=e=>{srnSpd=+e.target.value};
+  $('#splay').onclick=()=>{if(sAnim){clearInterval(sAnim);sAnim=null;$('#splay').textContent='▶ Animacja urodzeń';return}srnKey=$('#srn').value;renderMap();$('#splay').textContent='⏹ Stop';settleAnim(bpl,yy)};
+  $('#epoka').onchange=e=>{mapEpoch=e.target.value;mapKeep=true;renderMap()};
+  document.querySelectorAll('#leg [data-m]').forEach(d=>d.onclick=()=>{const l=ml[d.dataset.m];if(l){lmap.fitBounds(l.getBounds(),{padding:[60,60],maxZoom:10});l.openPopup()}});
+  document.querySelectorAll('#leg input[data-g]').forEach(i=>i.onchange=()=>{i.checked?mapGen.add(+i.dataset.g):mapGen.delete(+i.dataset.g);renderMap()});
+  $('#gall').onclick=e=>{e.preventDefault();gl.forEach(g=>mapGen.add(g));renderMap()};$('#gnone').onclick=e=>{e.preventDefault();mapGen.clear();mapGen.add(1e9);renderMap()};
+  if($('#geob'))$('#geob').onclick=async()=>{if(geoBusy)return;geoBusy=true;renderMap();
+    for(const pl of miss){try{const r=await(await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(pl.replace(/,?\s*par\.\s*/,', ').split(',')[0]))).json();
+      geoC[pl]=r[0]?[+r[0].lat,+r[0].lon]:null}catch(e){}await new Promise(r=>setTimeout(r,1100))}
+    try{localStorage.setItem('geo',JSON.stringify(geoC))}catch(e){}geoBusy=false;if(view==='mapa')renderMap()};
+}
+// ======== notatki badawcze: rekordy „0 @Rn@ NOTE tytuł” + treść w CONT – zapisywane w tym samym pliku .ged ========
+var noteSel=null,noteEdit=false;
+const notes=()=>roots.filter(r=>r.lvl===0&&r.tag==='NOTE'&&/^@R\d+@$/.test(r.id||''));
+const noteTitle=n=>n.val.split('\n')[0]||'(bez tytułu)',noteBody=n=>n.val.split('\n').slice(1).join('\n');
+// prosty markdown: nagłówki, pogrubienie, listy, tabele, linki
+function md(s){const inl=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const out=[],L=s.split('\n');for(let i=0;i<L.length;i++){const l=L[i];
+    if(/^\s*\|/.test(l)){const rows=[];while(i<L.length&&/^\s*\|/.test(L[i]))rows.push(L[i++]);i--;
+      out.push('<table class="ntab">'+rows.filter(r=>!/^\s*\|[\s:|-]+\|\s*$/.test(r)).map((r,k)=>'<tr>'+r.trim().replace(/^\||\|$/g,'').split('|').map(c=>`<${k?'td':'th'}>${inl(c.trim())}</${k?'td':'th'}>`).join('')+'</tr>').join('')+'</table>');continue}
+    const h=l.match(/^(#{1,4})\s+(.*)/);if(h){out.push(`<h${h[1].length+2}>${inl(h[2])}</h${h[1].length+2}>`);continue}
+    const li=l.match(/^\s*[-*]\s+(.*)/);if(li){out.push(`<li>${inl(li[1])}</li>`);continue}
+    out.push(l.trim()?`<p>${inl(l)}</p>`:'')}
+  return out.join('').replace(/(<li>.*?<\/li>)+/g,m=>`<ul>${m}</ul>`)}
+function renderNotes(){const ns=notes();if(!ns.find(n=>n.id===noteSel))noteSel=ns[0]?.id||null;const n=byId[noteSel];
+  $('#main').innerHTML=`<div id="notes" style="display:flex;gap:16px;padding:16px;align-items:flex-start">
+   <div style="width:260px;flex:none"><button class="pri" style="width:100%;margin-bottom:8px" onclick="addNote()">+ Nowa notatka</button>
+    ${ns.map(x=>`<div class="fam" style="padding:8px;${x.id===noteSel?'background:var(--sel-bg,rgba(0,0,0,.06));font-weight:700':''}" onclick="noteSel='${x.id}';noteEdit=false;renderNotes()">${esc(noteTitle(x))}</div>`).join('')||'<small>Brak notatek.</small>'}</div>
+   <div style="flex:1;min-width:0;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px">${!n?'<p>Dodaj pierwszą notatkę.</p>':noteEdit?
+    `<input id="ntit" value="${esc(noteTitle(n))}" style="width:100%;font-size:18px;font-weight:700;margin-bottom:8px">
+     <textarea id="nbody" style="width:100%;min-height:60vh;font:13px/1.5 monospace">${esc(noteBody(n))}</textarea>
+     <div class="row" style="margin-top:8px"><button class="pri" onclick="saveNote()">Zapisz</button><button onclick="noteEdit=false;renderNotes()">Anuluj</button>
+      <small class="mut" style="margin-left:auto">**pogrubienie**, # nagłówek, - lista, | tabela |</small></div>`:
+    `<div class="row" style="margin-bottom:6px"><h2 style="margin:0;flex:1">${esc(noteTitle(n))}</h2><button onclick="noteEdit=true;renderNotes()">Edytuj</button><button style="color:#c33" onclick="delNote()">Usuń</button></div>
+     <div class="nmd">${md(noteBody(n))}</div>`}</div></div>`}
+function addNote(){const n=newNode('NOTE','R');n.val='Nowa notatka\n';noteSel=n.id;noteEdit=true;persist();renderNotes()}
+function saveNote(){const n=byId[noteSel];n.val=($('#ntit').value.trim()||'(bez tytułu)')+'\n'+$('#nbody').value;noteEdit=false;persist();renderNotes();if(fileHandle)saveFile(true)}
+function delNote(){const n=byId[noteSel];if(!confirm(`Usunąć notatkę „${noteTitle(n)}”?`))return;roots.splice(roots.indexOf(n),1);delete byId[noteSel];noteSel=null;persist();renderNotes()}
+// ======== nowe narzędzia: kontrola sprzeczności, sieć powiązań, oś historii, „gdzie szukać”, odczyt aktu ========
+const Y=(p,t)=>+yr(p,t)||0,by_=p=>Y(p,'BIRT')||Y(p,'CHR')||Y(p,'BAPM'),dy_=p=>Y(p,'DEAT')||Y(p,'BURI');
+// Detektyw sprzeczności – reguły na datach i wieku
+function issues(){const out=[],add=(p,t)=>out.push([p,t]);
+  indis().forEach(p=>{const b=by_(p),d=dy_(p);
+    if(b&&d&&d<b)add(p,`zgon (${d}) przed urodzeniem (${b})`);
+    if(b&&d&&d-b>105)add(p,`żył ${d-b} lat – sprawdź daty`);
+    famsOf(p,'FAMS').forEach(f=>{const m=Y(f,'MARR');if(m&&b&&m-b<15)add(p,`ślub w wieku ${m-b} lat (${m})`);if(m&&d&&m>d)add(p,`ślub (${m}) po własnej śmierci (${d})`)});
+    childrenOf(p).forEach(c=>{const cb=by_(c);if(!cb||!b)return;const a=cb-b,isM=sex(p)==='F';
+      if(a<14)add(c,`${isM?'matka':'ojciec'} ${name(p)} miał(a) ${a} lat przy narodzinach`);
+      if(isM&&a>52)add(c,`matka ${name(p)} miała ${a} lat przy narodzinach`);
+      if(!isM&&a>80)add(c,`ojciec ${name(p)} miał ${a} lat przy narodzinach`);
+      if(d&&(isM?cb>d:cb>d+1))add(c,`urodzone (${cb}) po śmierci ${isM?'matki':'ojca'} ${name(p)} (${d})`)});
+    siblingsOf(p).filter(s=>s.id<p.id&&by_(s)&&b&&by_(s)===b&&name(s).split(' ')[0]===name(p).split(' ')[0]).forEach(s=>add(p,`możliwy duplikat: ${name(s)} (to samo imię i rok)`))});
+  const u=new Set();return out.filter(([p,t])=>{const k=p.id+t;if(u.has(k))return false;u.add(k);return true})}
+function renderKontrola(){const L=issues();
+  $('#main').innerHTML=`<div style="padding:16px;max-width:900px"><h2>Detektyw sprzeczności <small class="mut">(${L.length})</small></h2>
+   <p class="mut">Automatyczne sprawdzenie dat i wieku. To nie muszą być błędy – to miejsca warte sprawdzenia w aktach. Klik = profil osoby.</p>
+   ${L.map(([p,t])=>`<div class="fam" onclick="go('${p.id}','profil')">${avatar(p)}<div><b>${esc(name(p))}</b> <small>${life(p)}</small><br><small>⚠ ${esc(t)}</small></div></div>`).join('')||'<p>Brak wykrytych sprzeczności.</p>'}</div>`}
+// Sieć społeczna: kto komu był chrzestnym, świadkiem ślubu, zgłaszającym zgon – z notatek o aktach (także osoby spoza drzewa)
+const nrm=t=>t.toLowerCase().replace(/gar(s?z?t|szt)k/g,'garstk').replace(/\s+vel\s+\S+/g,'').replace(/\s+/g,' ');
+const ROLE={chrz:['chrzestny','#2b8a3e'],swiad:['świadek','#1971c2'],zgl:['zgłaszający zgon/urodzenie','#e8590c'],rod:['rodzina (zięć, brat…)','#862e9c']};
+const ROLE_RE=[['chrz',/chrzestn|patrin|patrini|kum/i],['swiad',/świadk|świadek|swiadk|testib|praesentib|presentib/i],['zgl',/zgłosi|zgłasza|stawili/i],['rod',/zięć|brat |siostr|szwagier/i]];
+const NAME_RE=/([A-ZŁŚŻŹĆŃÓ][a-ząćęłńóśźż]+)\s+([A-ZŁŚŻŹĆŃÓ][a-ząćęłńóśźż]+(?:-[A-ZŁŚŻŹĆŃÓ][a-ząćęłńóśźż]+)?)/g;
+const STOP=/^(Akt|Nr|Źródło|Suserz|Łuszczanów|Słup|FamilySearch|Archiwum|Geneteka|Prawdopodobnie|Gąbin|Szczawin|Waliszew|Potrzasków|Kamień|Ślub|Zgon|Chrzest|Wiek|Świadkowie|Chrzestni|Zgłosili|HIPOTEZA|UWAGA|Mikrofilm)$/;
+function links(){const E=[],seen=new Set(),tree=new Map();indis().forEach(p=>{const n=nrm(name(p));if(!tree.has(n))tree.set(n,[]);tree.get(n).push(p)});
+  const scan=(owner,raw)=>raw.split(/(?<=[.;])\s+|\n/).forEach(zd=>{const role=(ROLE_RE.find(([,r])=>r.test(zd))||[])[0];if(!role)return;
+    for(const m of zd.matchAll(NAME_RE)){if(STOP.test(m[1])||STOP.test(m[2])||/ów$|ich$/.test(m[2])||/^(Chrzestn|Świad)/.test(m[1]))continue;
+      const on=nrm(name(owner)).split(' '),mn=nrm(m[1]+' '+m[2]).split(' ');const LAT={thomas:'tomasz',catharina:'katarzyna',paulus:'paweł',joannes:'jan',martinus:'marcin',nicolaus:'mikołaj',adalbertus:'wojciech',lucas:'łukasz',casimirus:'kazimierz',stephanus:'stefan',antonius:'antoni',josephus:'józef'},g=LAT[mn[0]]||mn[0];if(mn[1].slice(0,4)===on[on.length-1].slice(0,4)&&g===on[0])continue; /* ta sama osoba w innym zapisie (np. Thomas = Tomasz) */const full=m[1]+' '+m[2],n=nrm(full);
+      const inTree=(tree.get(n)||[]).length===1?tree.get(n)[0]:null;if(inTree===owner||nrm(name(owner))===n)continue;
+      const k=owner.id+'|'+n+'|'+role;if(seen.has(k))continue;seen.add(k);E.push({a:owner,b:inTree,bn:full,role,zd:zd.trim()})}});
+  indis().forEach(p=>scan(p,kids(p,'NOTE').map(n=>noteTxt(n.val)).join('\n')));
+  roots.filter(r=>r.tag==='FAM').forEach(f=>{const h=byId[kid(f,'HUSB')?.val]||byId[kid(f,'WIFE')?.val];if(h)scan(h,kids(f,'NOTE').map(n=>noteTxt(n.val)).join('\n'))});
+  return E}
+var siecRole='all';
+function renderSiec(){const ALL=links(),E=ALL.filter(e=>siecRole==='all'||e.role===siecRole);
+  const key=e=>e.b?e.b.id:'x:'+nrm(e.bn),lbl=new Map();E.forEach(e=>{lbl.set(e.a.id,{t:name(e.a),id:e.a.id,tree:1});lbl.set(key(e),{t:e.b?name(e.b):e.bn,id:e.b?.id,tree:!!e.b})});
+  const N=[...lbl.keys()],W=Math.max(760,N.length*24),R=W/2-170,cx=W/2,cy=W/2;
+  const pos=new Map(N.map((k,i)=>{const a=2*Math.PI*i/N.length;return[k,[cx+R*Math.cos(a),cy+R*Math.sin(a),a]]}));
+  const deg=new Map();E.forEach(e=>{const k=key(e);deg.set(k,(deg.get(k)||0)+1)});
+  const top=[...deg].filter(([k])=>!lbl.get(k).tree||true).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const cnt=r=>ALL.filter(e=>r==='all'||e.role===r).length;
+  $('#main').innerHTML=`<div style="padding:16px;max-width:1100px"><h2>Sieć społeczna rodu – kumowie, świadkowie, zgłaszający</h2>
+   <p>Pokazuje, <b>z kim rodzina żyła na co dzień</b>: kto trzymał dzieci do chrztu, kto świadkował na ślubach, kto zgłaszał zgony. Dane pochodzą z odczytanych aktów zapisanych w notatkach. Te same nazwiska powtarzające się przy wielu rodzinach to zwykle <b>sąsiedzi, krewni lub kumowie</b> – często wskazówka do nieznanego pokrewieństwa.</p>
+   <div class="row" style="gap:6px;flex-wrap:wrap;margin:8px 0">${[['all',['wszystkie','#666']],...Object.entries(ROLE)].map(([k,[t,c]])=>`<button onclick="siecRole='${k}';renderSiec()" style="${siecRole===k?`background:${c};color:#fff;border-color:${c}`:`border-color:${c}`}">${t} (${cnt(k)})</button>`).join('')}</div>
+   <p class="mut"><span style="color:#e8590c">●</span> osoba z drzewa (klik = profil) &nbsp; <span style="color:#999">○</span> osoba spoza drzewa – tylko wymieniona w akcie. Kolor linii = rodzaj powiązania; najedź na linię, by zobaczyć opis.</p>
+   ${top.length?`<p><b>Najczęściej występujący:</b> ${top.map(([k,n])=>`${esc(lbl.get(k).t)} (${n})`).join(', ')}</p>`:''}
+   <div style="overflow:auto"><svg width="${W}" height="${W}" style="font:11px sans-serif">
+   ${E.map(e=>{const[x1,y1]=pos.get(e.a.id),[x2,y2]=pos.get(key(e));return`<path d="M${x1} ${y1}Q${cx} ${cy} ${x2} ${y2}" fill="none" stroke="${ROLE[e.role][1]}" stroke-opacity=".55" stroke-width="2"><title>${esc(lbl.get(key(e)).t+' – '+ROLE[e.role][0]+' u: '+name(e.a)+'\n'+e.zd)}</title></path>`}).join('')}
+   ${N.map(k=>{const[x,y,a]=pos.get(k),d=a*180/Math.PI,f=d>90&&d<270,L=lbl.get(k);return`<g ${L.id?`style="cursor:pointer" onclick="go('${L.id}','profil')"`:''}><circle cx="${x}" cy="${y}" r="${4+Math.min(6,deg.get(k)||0)}" fill="${L.tree?'#e8590c':'#fff'}" stroke="${L.tree?'#e8590c':'#999'}"/><text transform="translate(${x},${y}) rotate(${f?d-180:d})" x="${f?-11:11}" dy="4" text-anchor="${f?'end':'start'}" fill="currentColor" ${L.tree?'font-weight="bold"':''}>${esc(L.t)}</text></g>`}).join('')}</svg></div>
+   <h3>Opis powiązań (${E.length})</h3>${E.map(e=>`<div class="fact" style="grid-template-columns:1fr"><div><b>${esc(e.b?name(e.b):e.bn)}</b> <span style="background:${ROLE[e.role][1]};color:#fff;border-radius:8px;padding:0 6px;font-size:11px">${ROLE[e.role][0]}</span> u <a href="#" onclick="go('${e.a.id}','profil');return false">${esc(name(e.a))}</a><br><small class="mut">„${esc(e.zd.slice(0,240))}”</small></div></div>`).join('')}</div>`}
+// Oś czasu na tle historii
+const HIST=[[1655,'Potop szwedzki'],[1709,'Wielka zaraza (dżuma) na Mazowszu'],[1733,'Wojna o sukcesję polską'],[1764,'Stanisław August Poniatowski królem'],[1772,'I rozbiór Polski'],[1791,'Konstytucja 3 Maja'],[1793,'II rozbiór – Mazowsze pod Prusami'],[1794,'Powstanie kościuszkowskie'],[1795,'III rozbiór – koniec Rzeczypospolitej'],[1807,'Księstwo Warszawskie'],[1808,'Kodeks Napoleona – akta stanu cywilnego'],[1812,'Wyprawa Napoleona na Moskwę'],[1815,'Królestwo Polskie (Kongresowe)'],[1830,'Powstanie listopadowe'],[1831,'Epidemia cholery'],[1848,'Wiosna Ludów; cholera'],[1852,'Epidemia cholery'],[1863,'Powstanie styczniowe'],[1864,'Uwłaszczenie chłopów'],[1868,'Akta metrykalne po rosyjsku (do 1917)'],[1880,'Emigracja „za chlebem” do USA (1880–1914)'],[1905,'Rewolucja 1905'],[1914,'I wojna światowa'],[1918,'Niepodległość Polski'],[1920,'Wojna polsko-bolszewicka'],[1929,'Wielki kryzys'],[1939,'II wojna światowa'],[1945,'Koniec wojny; reforma rolna'],[1956,'Odwilż październikowa'],[1970,'Grudzień 1970'],[1980,'Solidarność'],[1989,'Upadek PRL'],[2004,'Polska w Unii Europejskiej']];
+function histTab(p){const b=by_(p);if(!b)return'<small>Brak roku urodzenia.</small>';const d=dy_(p)||Math.min(new Date().getFullYear(),b+80);
+  const ev=[[b,'urodzenie',1],...HIST.filter(([y])=>y>=b&&y<=d),...(dy_(p)?[[dy_(p),'zgon',1]]:[]),
+    ...childrenOf(p).filter(by_).map(c=>[by_(c),`dziecko: ${name(c)}`,1]),...famsOf(p,'FAMS').filter(f=>Y(f,'MARR')).map(f=>[Y(f,'MARR'),'ślub',1])].sort((a,b)=>a[0]-b[0]);
+  return ev.map(([y,t,k])=>`<div class="fact"><b>${y}</b><div>${k?`<b>${esc(t)}</b>`:esc(t)} <small class="mut">– wiek ${y-b}</small></div></div>`).join('')}
+// Gdzie szukać dalej – reguły dla Suserza i okolic
+function whereTab(p){const b=by_(p),d=dy_(p),pl=((sub(p,'BIRT.PLAC')?.val||'')+' '+(sub(p,'DEAT.PLAC')?.val||'')+' '+kids(p,'NOTE').map(n=>noteTxt(n.val)).join(' ')).toLowerCase(),L=[];
+  const sus=/suserz|łuszczan|słup|szczawin|waliszew|potrzask/.test(pl);
+  if(!famsOf(p,'FAMC').length)L.push(['Brak rodziców','Akt ślubu tej osoby zwykle podaje rodziców (od 1808 zawsze) – najszybsza droga pokolenie wstecz.']);
+  if(!b)L.push(['Brak daty urodzenia','Szukaj chrztu w Genetece (panel drzewa → „Szukaj w źródłach”); zakres lat oszacuj z daty ślubu (zwykle w wieku 18–30) lub zgonu (wiek w akcie).']);
+  if(b&&b<1780&&sus)L.push(['Chrzest przed 1780 (Suserz)','Księgi Suserza sprzed X 1780 tylko w Archiwum Diecezjalnym w Płocku – zapytanie gotowe w zapytanie_archiwum_plock.txt.']);
+  if(b&&b>=1780&&b<=1824&&sus)L.push(['Chrzest 1780–1824 (Suserz)','FamilySearch, film 008020841 – chrzty 1780–1790 (zdj. 74–127), od XI 1790 nowa księga (zdj. 214+); śluby od 1802 ułożone wg wsi (zdj. 451–550).']);
+  if(sus&&(b>=1808||d>=1808))L.push(['Akta stanu cywilnego od 1808','AP w Płocku: ASC gminy Suserz (50/407) i parafii Suserz (50/218) – skany na szukajwarchiwach.gov.pl.']);
+  if(b>=1780||d>=1780)L.push(['Indeksy','Geneteka – woj. mazowieckie (Suserz, Gąbin, Pacyna, Słubice, Sanniki, Czermno) – urodzenia, śluby, zgony.']);
+  if(!d&&b&&b<1925)L.push(['Brak zgonu','Księgi parafii, gdzie mieszkały dzieci; dla ur. 1860–1920 sprawdź emigrację: FamilySearch (USA – Detroit, Chicago).']);
+  if(b&&b<1864)L.push(['Ziemia','Przed uwłaszczeniem (1864) chłop nie był właścicielem – ślady w inwentarzach dóbr i tabelach prestacyjnych (AP Płock, AGAD).']);
+  if(b>=1860&&b<=1930)L.push(['Wojsko i wojna','IPN (inwentarz.ipn.gov.pl), CAW – akta personalne; listy strat I i II wojny.']);
+  if(!kids(p,'OBJE').length)L.push(['Brak skanów aktów','Dołącz zdjęcie aktu i odczytaj je w zakładce „Odczytaj akt”.']);
+  return L.map(([h,t])=>`<div class="fact" style="grid-template-columns:190px 1fr"><b>${esc(h)}</b><div>${esc(t)}</div></div>`).join('')||'<small>Brak wskazówek.</small>'}
+// Odczyt aktu przez Claude (przez serwer.py – klucz w .env)
+function aktTab(p){return`<p class="mut">Wybierz zdjęcie aktu (łacina, polski, rosyjski). Claude odczyta tekst, przetłumaczy go i zaproponuje dane. Działa przy uruchomieniu przez <code>python serwer.py</code> z kluczem w <code>.env</code>.</p>
+  <input type="file" accept="image/*" onchange="aktRead('${p.id}',this.files[0])"><div id="aktout" style="margin-top:12px"></div>`}
+async function aktRead(id,f){if(!f)return;const o=$('#aktout');o.innerHTML='Odczytuję akt… (do minuty)';
+  const b=await createImageBitmap(f),s=Math.min(1,2000/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext('2d').drawImage(b,0,0,c.width,c.height);
+  const img=c.toDataURL('image/jpeg',.85);let r;
+  try{r=await (await fetch('/api/odczyt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:img})})).json()}catch(e){r={blad:'Brak serwera – uruchom: python serwer.py'}}
+  if(r.blad){o.innerHTML=`<p style="color:#c33">${esc(r.blad)}</p>`;return}window._akt={id,r,img};
+  const kv=(l,v)=>v?`<div class="fact"><b>${l}</b><div>${esc(v)}</div></div>`:'';
+  o.innerHTML=`${kv('Typ',r.typ)}${kv('Nr',r.numer)}${kv('Data',r.data)}${kv('Miejsce',r.miejscowosc)}${kv('Osoba',[r.osoba?.imie,r.osoba?.nazwisko,r.osoba?.wiek&&'('+r.osoba.wiek+')'].filter(Boolean).join(' '))}
+   ${kv('Ojciec',r.rodzice?.ojciec)}${kv('Matka',r.rodzice?.matka)}${kv('Małżonek',r.malzonek)}${kv('Chrzestni / świadkowie',(r.chrzestni_swiadkowie||[]).filter(Boolean).join(', '))}${kv('Uwagi',r.uwagi)}
+   <h3>Transkrypcja</h3><div class="note">${esc(r.transkrypcja||'')}</div><h3>Tłumaczenie</h3><div class="note">${esc(r.tlumaczenie||'')}</div>
+   <div class="row" style="margin-top:10px"><button class="pri" onclick="aktApply()">Dodaj do osoby: zdjęcie + notatka${r.data&&(r.typ==='chrzest'||r.typ==='zgon')?' + data':''}</button></div>`}
+function aktApply(){const{id,r,img}=window._akt,p=byId[id],t={chrzest:'BIRT',zgon:'DEAT'}[r.typ];
+  if(t&&r.data&&!sub(p,t+'.DATE'))setEv(p,t,r.data,r.miejscowosc||'');
+  const o={lvl:1,id:null,tag:'OBJE',val:'',kids:[]};p.kids.push(o);setKid(o,'FORM','jpg');setKid(o,'FILE',img);setKid(o,'TITL',`Akt ${r.typ||''} ${r.numer||''} ${r.data||''}`.trim());
+  p.kids.push({lvl:1,id:null,tag:'NOTE',val:`Odczyt aktu (Claude): ${r.typ||''} nr ${r.numer||'?'}, ${r.data||''}, ${r.miejscowosc||''}.\n${r.tlumaczenie||''}\nTranskrypcja: ${r.transkrypcja||''}`,kids:[]});
+  persist();ptab='szczegoly';render();if(fileHandle)saveFile(true)}
+// ======== animacja osiedlania rodu (mapa): urodzenia osób o wybranym nazwisku rok po roku ========
+var sAnim=null,srnKey='',srnSpd=500;
+const srnKeyOf=p=>{const s=(sub(p,'NAME.SURN')?.val||(sub(p,'NAME')?.val.split('/')[1]||'')).trim();return s&&!/^(nn|nz|\?)$/i.test(s)?nrm(s).replace(/(sk|ck|dzk)a$/,'$1i'):''}; // Wiatrowska=Wiatrowski
+function surnameList(){const m={};indis().forEach(p=>{const k=srnKeyOf(p);if(!k)return;const s=(sub(p,'NAME.SURN')?.val||'').trim();(m[k]??={k,n:0,f:{}}).n++;m[k].f[s]=(m[k].f[s]||0)+1});
+  return Object.values(m).filter(x=>x.n>1).map(x=>({k:x.k,n:x.n,t:Object.entries(x.f).sort((a,b)=>b[1]-a[1])[0][0]})).sort((a,b)=>b.n-a.n)}
+function settleAnim(bpl,yy){if(sAnim){clearInterval(sAnim);sAnim=null}
+  const items=indis().filter(p=>srnKeyOf(p)===srnKey).map(p=>({p,y:yy(p),pl:bpl(p)})).filter(x=>x.y&&x.pl&&geo(x.pl)).sort((a,b)=>a.y-b.y);
+  if(!items.length)return alert('Brak urodzeń z miejscem na mapie dla tego nazwiska.');
+  lmap.eachLayer(l=>{if(l instanceof L.Path||l instanceof L.Marker)lmap.removeLayer(l)}); // czysta mapa: tylko animowane urodzenia
+  const lg=L.layerGroup().addTo(lmap),cnt={},y0=items[0].y,y1=items.at(-1).y;const ll=items.map(x=>geo(x.pl)),md=i=>ll.map(p=>p[i]).sort((a,b)=>a-b)[ll.length>>1],core=ll.filter(p=>Math.abs(p[0]-md(0))<1.2&&Math.abs(p[1]-md(1))<1.8); // kadr na główne skupisko (bez pojedynczych emigrantów)
+  lmap.fitBounds(core.length?core:ll,{padding:[40,40],maxZoom:11});
+  const box=L.control({position:'topright'});box.onAdd=()=>{const d=L.DomUtil.create('div');d.id='sbox';d.style.cssText='background:#fffe;padding:8px 14px;border-radius:10px;box-shadow:0 1px 6px #0004;font:600 26px sans-serif;color:#333;min-width:150px';return d};box.addTo(lmap);
+  let y=y0-1,i=0,n=0;const act=[];const col=y=>`hsl(${240-240*(y-y0)/Math.max(1,y1-y0)} 75% 45%)`;
+  sAnim=setInterval(()=>{if(!lmap||!document.getElementById('sbox')){clearInterval(sAnim);sAnim=null;return}y++;
+    while(i<items.length&&items[i].y<=y){const it=items[i++],ll=geo(it.pl),k=ll.join();cnt[k]=(cnt[k]||0)+1;n++;
+      const pa=parentsOf(it.p).map(bpl).find(x=>x&&geo(x)&&geo(x).join()!==k);if(pa)L.polyline([geo(pa),ll],{color:col(it.y),weight:1.5,opacity:.6,dashArray:'4 4'}).addTo(lg);
+      const mk=L.circleMarker(ll,{radius:4+Math.min(14,Math.sqrt(cnt[k])*3),color:'#fff',weight:1,fillColor:col(it.y),fillOpacity:.85,className:'pulse'}).addTo(lg).on('click',()=>showPanel(it.p.id)),tip=`${esc(name(it.p))} – ${it.y}, ${esc(it.pl)}`;
+      // wyskakująca karta urodzenia: zdjęcie, imię, data; znika po chwili (dłużej przy wolnym tempie), potem zwykły dymek
+      const dt=pdate(sub(it.p,'BIRT.DATE')?.val||sub(it.p,'CHR.DATE')?.val)||it.y,ph=photo(it.p);
+      mk.bindTooltip(`<div class="bpop">${ph?`<img src="${esc(ph)}">`:''}<div><b>${esc(name(it.p))}</b><br>ur. ${esc(String(dt))}<br><small>${esc(it.pl)}</small></div></div>`,{permanent:true,direction:'top',offset:[0,-8],className:'bpopw'}).openTooltip();
+      const done=()=>{if(!mk._bp)return;mk._bp=0;mk.unbindTooltip();mk.bindTooltip(tip);act.splice(act.indexOf(mk),1)};mk._bp=1;mk._k=k;
+      act.filter(m=>m._k===k).forEach(m=>m._done());act.push(mk);mk._done=done;while(act.length>3)act[0]._done(); // max 3 karty naraz, w jednym miejscu jedna
+      setTimeout(done,Math.max(1600,srnSpd*4))}
+    document.getElementById('sbox').innerHTML=`${y}<div style="font:13px sans-serif">urodzeń: ${n} z ${items.length} · miejsc: ${Object.keys(cnt).length}</div>`;
+    if(y>=y1){clearInterval(sAnim);sAnim=null;const b=document.getElementById('splay');if(b)b.textContent='▶ Animacja urodzeń'}},srnSpd)}
+
+// ======== Analizy: oś czasu, miejscowość, listy, statystyki, braki, DNA ========
+var atab='os',aSel={};
+const EPID=[[1831,1831,'cholera'],[1847,1848,'głód i tyfus'],[1848,1849,'cholera'],[1852,1855,'cholera'],[1866,1867,'cholera'],[1873,1873,'cholera'],[1892,1894,'cholera'],[1915,1915,'tyfus wojenny'],[1918,1920,'grypa hiszpanka']];
+const lnk=p=>`<a href="#" onclick="go('${p.id}','profil');return false">${esc(name(p))}</a>`;
+function renderAnaliz(){const T={os:'Oś czasu rodu',wies:'Kto żył w tej wsi',listy:'Listy do archiwów',stat:'Statystyki',braki:'Brakujące ogniwa',dna:'DNA wg gałęzi'};
+  const body=({os:aOs,wies:aWies,listy:aListy,stat:aStat,braki:aBraki,dna:aDna})[atab]();
+  $('#main').innerHTML=`<div style="padding:16px;max-width:1150px"><div class="ptabs" style="margin:0 0 14px;padding:0">${Object.entries(T).map(([k,l])=>`<span class="${k===atab?'on':''}" onclick="atab='${k}';render()">${l}</span>`).join('')}</div>${body}</div>`;
+  document.querySelectorAll('#main [data-a]').forEach(e=>e.onchange=()=>{aSel[e.dataset.a]=e.value;render()})}
+const selS=(k,opts,v)=>`<select data-a="${k}">${opts.map(([a,b])=>`<option value="${esc(a)}" ${String(a)===String(v)?'selected':''}>${esc(b)}</option>`).join('')}</select>`;
+
+// 1. oś czasu rodu: urodzenia/zgony na dekady + zdarzenia historyczne + zgony w latach epidemii
+function aOs(){const sl=surnameList(),k=aSel.osk??'';const ps=indis().filter(p=>!k||srnKeyOf(p)===k);const dec={};
+  ps.forEach(p=>{const b=by_(p),d=dy_(p);if(b)(dec[b-b%10]??={b:0,d:0,k:0}).b++;if(d){(dec[d-d%10]??={b:0,d:0,k:0}).d++;if(b&&d-b<5)dec[d-d%10].k++}});
+  const ks=Object.keys(dec).map(Number).sort((a,b)=>a-b),mx=Math.max(1,...ks.map(x=>Math.max(dec[x].b,dec[x].d)));
+  const ep=EPID.map(([a,b,t])=>({a,b,t,l:ps.filter(p=>{const d=dy_(p);return d>=a&&d<=b})})).filter(e=>e.l.length);
+  return`<p>Nazwisko: ${selS('osk',[['','całe drzewo'],...sl.map(s=>[s.k,`${s.t} (${s.n})`])],k)}</p>
+  <div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px">${ks.map(x=>{const h=HIST.filter(([y])=>y>=x&&y<x+10).map(z=>z[1]).join('; '),e=EPID.filter(([a,b])=>a<x+10&&b>=x).map(z=>z[2]).join(', ');
+   return`<tr><td style="padding:2px 8px"><b>${x}s</b></td><td style="width:340px"><div style="background:#2b8a3e;height:9px;width:${dec[x].b/mx*320}px" title="urodzenia ${dec[x].b}"></div><div style="background:#868e96;height:9px;width:${dec[x].d/mx*320}px;margin-top:1px" title="zgony ${dec[x].d}"></div></td><td style="padding:2px 8px">${dec[x].b} ur. / ${dec[x].d} zm.${dec[x].k?` <b style="color:#e03131">(${dec[x].k} dzieci &lt;5 lat)</b>`:''}</td><td style="padding:2px 8px;color:#555">${esc(h)}${e?` <b style="color:#e03131">☣ ${esc(e)}</b>`:''}</td></tr>`}).join('')}</table></div>
+  <p><small>zielony = urodzenia, szary = zgony</small></p><h3>Zgony w latach epidemii</h3>${ep.map(e=>`<p><b>${e.a}${e.b>e.a?'–'+e.b:''} ${e.t}:</b> ${e.l.map(p=>`${lnk(p)} <small>(${life(p)})</small>`).join(', ')}</p>`).join('')||'<p>Brak zgonów w znanych latach epidemii.</p>'}`}
+
+// 2. kto żył w tej wsi: wszystkie osoby z jakimkolwiek wydarzeniem w miejscowości, w wybranym okresie; zaznacza niepołączonych z wybraną osobą
+function aWies(){const pk=pl=>{const g=geo(pl);return g?g.join():pl.toLowerCase().trim()},ev=[];
+  indis().forEach(p=>p.kids.filter(e=>kid(e,'PLAC')).forEach(e=>ev.push({p,pl:kid(e,'PLAC').val.trim(),y:+(sub(e,'DATE')?.val||'').match(/\d{4}/)?.[0]||null,t:e.tag})));
+  const pls={};ev.forEach(e=>{const k=pk(e.pl);(pls[k]??={k,n:0,nm:e.pl}).n++});const L=Object.values(pls).filter(x=>x.n>1).sort((a,b)=>b.n-a.n);
+  const k=aSel.wk??L[0]?.k;
+  if(aSel._wk!==k){const ys=ev.filter(e=>pk(e.pl)===k&&e.y).map(e=>e.y);aSel.wod=ys.length?Math.min(...ys):'';aSel.wdo=ys.length?Math.max(...ys):'';aSel._wk=k} // nowa miejscowość: zakres od najstarszego do najnowszego wpisu
+  const od=+(aSel.wod||0),dok=+(aSel.wdo||9999),G=gensFrom(cur),TG={BIRT:'ur.',CHR:'chrzest',DEAT:'zm.',BURI:'pochowany',RESI:'mieszkał',MARR:'ślub',OCCU:'zawód'};
+  const hit=ev.filter(e=>pk(e.pl)===k&&(!e.y||e.y>=od&&e.y<=dok)).sort((a,b)=>(a.y||9999)-(b.y||9999));const per=[...new Set(hit.map(h=>h.p))];
+  return`<p>Miejscowość: ${selS('wk',L.map(x=>[x.k,`${x.nm} (${x.n})`]),k)} od roku <input data-a="wod" value="${od||''}" size="5"> do <input data-a="wdo" value="${dok<9999?dok:''}" size="5"></p>
+  <p>${per.length} osób. <span style="background:#fff3bf;padding:0 4px">Podświetleni</span> nie mają w drzewie połączenia z osobą ${esc(name(byId[cur]))} – możliwi krewni do sprawdzenia.</p>
+  ${hit.map(h=>`<div style="padding:3px 6px;${h.p.id in G?'':'background:#fff3bf'}"><b>${h.y||'?'}</b> ${TG[h.t]||h.t}: ${lnk(h.p)} <small>(${life(h.p)}) – ${esc(h.pl)}</small></div>`).join('')}`}
+
+// 3. listy do archiwów: gotowe zapytania uzupełnione danymi osoby
+// autor listu = twórca drzewa: rekord SUBM, a gdy go brak – pierwsza osoba w pliku (MyHeritage zapisuje tam właściciela drzewa)
+function author(){const sm=roots.find(r=>r.tag==='SUBM'),p=indis()[0],em=(n,t)=>(n&&n.kids.flatMap(k=>k.tag===t?[k]:k.kids.filter(x=>x.tag===t))[0]?.val||'').replace(/@@/g,'@');
+  return sm?{n:sub(sm,'NAME')?.val||'',e:em(sm,'EMAIL'),a:(sub(sm,'ADDR')?.val||'').replace(/\n/g,', ')}:{n:p?name(p):'',e:em(p,'EMAIL'),a:(sub(p,'RESI.ADDR')?.val||'')}}
+// zapis/odczyt listów: podfolder „listy” w folderze pliku .ged (folder wskazuje się raz; uchwyt pamiętany)
+let dirH=null;
+async function lettersDir(){if(!window.showDirectoryPicker){alert('Ta przeglądarka nie pozwala zapisywać do folderu – użyj Chrome lub Edge.');return null}
+  if(!dirH)dirH=await idb('readonly',s=>s.get('dir')).catch(()=>null);
+  if(dirH&&await dirH.queryPermission({mode:'readwrite'})!=='granted'&&await dirH.requestPermission({mode:'readwrite'})!=='granted')dirH=null;
+  if(!dirH){try{alert('Wskaż folder, w którym leży plik drzewa (.ged) – listy zapiszą się w jego podfolderze „listy”.');dirH=await showDirectoryPicker({id:'drzewo',mode:'readwrite',startIn:fileHandle||'documents'});idb('readwrite',s=>s.put(dirH,'dir')).catch(()=>{})}catch(e){return null}}
+  return dirH.getDirectoryHandle('listy',{create:true})}
+async function saveLetter(){const d=await lettersDir();if(!d)return;const p=byId[aSel.lp]||byId[cur],T={usc:'USC',ap:'Archiwum Państwowe',diec:'Archiwum diecezjalne',ipn:'IPN'};
+  const fn=`${name(p)} - ${T[aSel.lt||'usc']} - ${new Date().toISOString().slice(0,10)}.txt`.replace(/[\/:*?"<>|]/g,'_');
+  const w=await (await d.getFileHandle(fn,{create:true})).createWritable();await w.write($('#ltxt').value);await w.close();$('#lmsg').textContent=`✓ Zapisano: listy/${fn}`;listLetters()}
+async function listLetters(){const d=await lettersDir();if(!d)return;const fs=[];for await(const h of d.values())if(h.kind==='file'&&/\.txt$/i.test(h.name))fs.push(h);fs.sort((a,b)=>a.name.localeCompare(b.name,'pl'));
+  $('#lfiles').innerHTML=fs.length?`<b>Zapisane listy (folder „listy”):</b>`+fs.map((h,i)=>`<div><a href="#" data-lf="${i}">📄 ${esc(h.name)}</a></div>`).join(''):'<small>Brak zapisanych listów.</small>';
+  $('#lfiles').querySelectorAll('[data-lf]').forEach(a=>a.onclick=async e=>{e.preventDefault();$('#ltxt').value=await (await fs[+a.dataset.lf].getFile()).text();$('#lmsg').textContent='Otwarto: '+fs[+a.dataset.lf].name})}
+function aListy(){const p=byId[aSel.lp]||byId[cur],ps=indis().filter(x=>/^\p{L}/u.test(name(x))&&name(x)!=='(bez imienia)').sort((a,b)=>name(a).localeCompare(name(b),'pl'));
+  const ev=t=>{const e=kid(p,t);return e?`${pdate(sub(e,'DATE')?.val)||'data nieznana'}${kid(e,'PLAC')?', '+kid(e,'PLAC').val:''}`:''},par=parentsOf(p).map(name).join(' i ')||'nieznani';
+  const b=by_(p),typ=aSel.lt||'usc',D=new Date().toLocaleDateString('pl-PL'),A=author(),sig=[A.n,A.a||'[adres]',A.e].filter(Boolean).join('\n');
+  const L={usc:`Urząd Stanu Cywilnego w ………………\n\nWniosek o wydanie odpisu zupełnego aktu urodzenia\n\nUprzejmie proszę o wydanie odpisu zupełnego aktu urodzenia:\n${name(p)}, ur. ${ev('BIRT')||'(data i miejsce)'},\nrodzice: ${par}.\n\nJestem ${'[stopień pokrewieństwa, np. prawnukiem]'} tej osoby (wstępny/zstępny), co uprawnia mnie do uzyskania odpisu (art. 125 ustawy Prawo o aktach stanu cywilnego). Odpis potrzebny jest do badań genealogicznych.\nOpłatę skarbową uiszczę na wskazane konto.\n\n${D}\n${sig}`,
+    ap:`Archiwum Państwowe w ………………\n\nZapytanie genealogiczne\n\nUprzejmie proszę o informację, czy w zasobie Archiwum znajdują się akty stanu cywilnego parafii ……………… z lat ${b?b-2:'……'}–${b?b+2:'……'}, a w nich akt ${kid(p,'BIRT')?'urodzenia/chrztu':'dotyczący'}:\n${name(p)}, ${ev('BIRT')||ev('CHR')||''}${par!=='nieznani'?`, syn/córka: ${par}`:''}.\n\nW przypadku odnalezienia proszę o wykonanie skanu lub kopii aktu oraz informację o kosztach. Proszę też o sprawdzenie aktu ślubu rodziców (jeśli to możliwe).\n\n${D}\n${sig}`,
+    diec:`Archiwum Diecezjalne w ………………\n\nUprzejmie proszę o kwerendę w księgach metrykalnych parafii ……………… dotyczącą:\n${name(p)}${b?`, ur. ok. ${b}`:''}${par!=='nieznani'?`, rodzice: ${par}`:''}.\nInteresują mnie akty chrztu, ślubu i zgonu oraz ewentualne wpisy w księgach zapowiedzi i spisach parafian (status animarum).\nProszę o informację o warunkach i kosztach kwerendy.\n\n${D}\n${sig}`,
+    ipn:`Instytut Pamięci Narodowej – Oddział w ………………\n\nWniosek o udostępnienie dokumentów (osoba najbliższa)\n\nWnoszę o udostępnienie dokumentów dotyczących:\n${name(p)}, ur. ${ev('BIRT')||'……'}, imię ojca: ${parentsOf(p).find(x=>sex(x)==='M')?.kids&&sub(parentsOf(p).find(x=>sex(x)==='M'),'NAME.GIVN')?.val||'……'}.\nJestem osobą najbliższą (art. 30 ustawy o IPN): [stopień pokrewieństwa]. W załączeniu kopia aktu zgonu oraz dokument potwierdzający pokrewieństwo.\n\n${D}\n${sig}
+[PESEL – wg formularza IPN]`};
+  return`<p><input id="lq" list="lql" placeholder="🔍 Szukaj osoby…" style="width:260px" onchange="const m=this.value.match(/· (@[^@]+@)$/);if(m){aSel.lp=m[1];render()}"><datalist id="lql">${ps.map(x=>`<option value="${esc(name(x))} ${life(x)} · ${x.id}">`).join('')}</datalist> Osoba: ${selS('lp',ps.map(x=>[x.id,`${name(x)} ${life(x)}`]),p.id)} Adresat: ${selS('lt',[['usc','USC – odpis aktu'],['ap','Archiwum Państwowe'],['diec','Archiwum diecezjalne / parafia'],['ipn','IPN – akta osoby']],typ)}</p>
+  <textarea id="ltxt" style="width:100%;height:340px;font:14px/1.5 sans-serif">${esc(L[typ])}</textarea><p><button onclick="navigator.clipboard.writeText($('#ltxt').value);this.textContent='✓ Skopiowano'">Kopiuj</button> <button onclick="saveLetter()">💾 Zapisz do folderu drzewa</button> <button onclick="listLetters()">📂 Otwórz zapisany list</button> <span id="lmsg" style="color:#2b8a3e"></span><br><small>Uzupełnij pola w […] i ………</small></p><div id="lfiles"></div>`}
+
+// 4. statystyki rodu
+function aStat(){const ps=indis(),life_=ps.filter(p=>by_(p)&&dy_(p)&&dy_(p)>=by_(p)),bins={};
+  life_.forEach(p=>{const c=by_(p)-by_(p)%50;(bins[c]??=[]).push(dy_(p)-by_(p))});const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):'–';
+  const mAge={M:[],F:[]};ps.forEach(p=>{const b=by_(p),m=Math.min(...famsOf(p,'FAMS').map(f=>+yr(f,'MARR')||9999));if(b&&m<9999&&m-b>12&&m-b<80)(mAge[sex(p)]||[]).push(m-b)});
+  const kids5=life_.filter(p=>dy_(p)-by_(p)<5),gv=p=>(sub(p,'NAME.GIVN')?.val||sub(p,'NAME')?.val.split('/')[0]||'').trim().split(/[\s,]+/)[0],top=s=>{const c={};ps.filter(p=>sex(p)===s).forEach(p=>{const g=gv(p);if(g&&g.length>1)c[g]=(c[g]||0)+1});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10)};
+  let son=0,sonN=0,dau=0,dauN=0;ps.forEach(p=>{const pa=parentsOf(p),f=pa.find(x=>sex(x)==='M'),m=pa.find(x=>sex(x)==='F');if(sex(p)==='M'&&f){sonN++;if(gv(p)===gv(f))son++}if(sex(p)==='F'&&m){dauN++;if(gv(p)===gv(m))dau++}});
+  return`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+   <div class="box"><h3>Średnia długość życia</h3>${Object.keys(bins).sort().map(c=>`<p>ur. ${c}–${+c+49}: <b>${avg(bins[c])} lat</b> <small>(${bins[c].length} os.)</small></p>`).join('')}<p><small>Bez dzieci zmarłych przed 5. r.ż.: ${avg(life_.filter(p=>dy_(p)-by_(p)>=5).map(p=>dy_(p)-by_(p)))} lat</small></p></div>
+   <div class="box"><h3>Wiek przy pierwszym ślubie</h3><p>Mężczyźni: <b>${avg(mAge.M)}</b> <small>(${mAge.M.length})</small></p><p>Kobiety: <b>${avg(mAge.F)}</b> <small>(${mAge.F.length})</small></p>
+    <h3>Umieralność dzieci</h3><p><b>${life_.length?Math.round(kids5.length/life_.length*100):0}%</b> osób ze znanymi datami zmarło przed 5. rokiem życia (${kids5.length} z ${life_.length})</p></div>
+   <div class="box"><h3>Najczęstsze imiona</h3><p><b>Mężczyźni:</b> ${top('M').map(([g,n])=>`${esc(g)} (${n})`).join(', ')}</p><p><b>Kobiety:</b> ${top('F').map(([g,n])=>`${esc(g)} (${n})`).join(', ')}</p>
+    <h3>Dziedziczenie imion</h3><p>Syn ma imię ojca: <b>${sonN?Math.round(son/sonN*100):0}%</b> (${son}/${sonN})</p><p>Córka ma imię matki: <b>${dauN?Math.round(dau/dauN*100):0}%</b> (${dau}/${dauN})</p></div></div>`}
+
+// 5. brakujące ogniwa: luki w danych, posortowane od najłatwiejszych do uzupełnienia (księgi 1808–1920 zwykle zindeksowane / online)
+function aBraki(){const now=new Date().getFullYear(),out=[];
+  indis().forEach(p=>{const b=by_(p),d=dy_(p),bp=kid(kid(p,'BIRT'),'PLAC')||kid(kid(p,'CHR'),'PLAC'),pa=parentsOf(p).length,mar=famsOf(p,'FAMS').length;
+    const add=(t,sc)=>out.push({p,t,sc:sc+(b&&b>=1808&&b<=1920?3:b&&b<1808?1:0)+(bp?2:0)});
+    if(!b&&(d||mar||pa))add('brak roku urodzenia',2);if(b&&!bp)add('brak miejsca urodzenia',1);
+    if(!pa&&b&&b<1930)add('nieznani rodzice'+(b>=1808?' – akt urodzenia poda ich imiona':''),3);
+    if(b&&!d&&!kid(p,'DEAT')&&now-b>105)add('brak daty zgonu',1);
+    if(mar&&famsOf(p,'FAMS').some(f=>!kid(f,'MARR')&&b&&b<1925))add('brak daty ślubu',1)});
+  out.sort((a,b)=>b.sc-a.sc);const k=aSel.bk||'';const typy=[...new Set(out.map(o=>o.t.split(' –')[0]))];const f=out.filter(o=>!k||o.t.startsWith(k));
+  return`<p>${out.length} luk. Rodzaj: ${selS('bk',[['','wszystkie'],...typy.map(t=>[t,t])],k)} <small>Najwyżej: łatwe do uzupełnienia (urodzeni 1808–1920, znane miejsce – księgi zwykle w Genetece / metryki.genealodzy.pl).</small></p>
+  ${f.slice(0,300).map(o=>`<div style="padding:3px 0"><span style="display:inline-block;width:46px;color:${o.sc>=6?'#2b8a3e':o.sc>=4?'#e6a700':'#999'}">${'●'.repeat(Math.min(3,Math.ceil(o.sc/2.5)))}</span>${lnk(o.p)} <small>${life(o.p)}</small> – ${esc(o.t)}</div>`).join('')}`}
+
+// 6. DNA wg gałęzi: dopasowania (wklejone) przypisane do linii czterech dziadków po wspólnych nazwiskach; szacunek pokrewieństwa z cM
+const CM=[[1300,'rodzeństwo / rodzic-dziecko lub dziadek'],[575,'kuzyn 1° / pół-rodzeństwo / wujek'],[180,'kuzyn 1° 1× usunięty / kuzyn 2°'],[75,'kuzyn 2°–3°'],[30,'kuzyn 3°–4°'],[0,'kuzyn 4° lub dalszy']];
+function aDna(){let raw='';try{raw=localStorage.getItem('dna')||''}catch(e){}
+  const me=byId[cur],gp=parentsOf(me).flatMap(parentsOf).slice(0,4),anc=(p,s=new Set(),d=0)=>{if(!p||d>8)return s;const k=srnKeyOf(p);k&&s.add(k);parentsOf(p).forEach(x=>anc(x,s,d+1));return s};
+  const br=gp.map(g=>({g,s:anc(g)}));const rows=raw.split('\n').map(l=>l.split(/[;\t]/).map(x=>x.trim())).filter(r=>r[0]);
+  const res=rows.map(([nm,cm,srn])=>{const c=+(cm||'').replace(',','.').replace(/[^\d.]/g,'')||0,ss=(srn||'').split(/[,\s]+/).filter(Boolean).map(x=>srnKeyOf({kids:[{tag:'NAME',val:'/'+x+'/',kids:[]}]})).filter(Boolean);
+    return{nm,c,ss,hit:br.filter(b=>ss.some(s=>b.s.has(s))),rel:CM.find(([m])=>c>=m)[1]}});
+  return`<p>Wklej dopasowania DNA (np. z MyHeritage), po jednym w wierszu: <b>imię nazwisko; cM; nazwiska przodków dopasowania</b><br><small>Gałęzie liczone od osoby: ${esc(name(me))} (dziadkowie ${gp.map(g=>esc(name(g))).join(', ')||'– brak w drzewie'}).</small></p>
+  <textarea id="dnat" style="width:100%;height:120px" placeholder="Szymon Garstka; 85; Garstka, Kowalczyk">${esc(raw)}</textarea><p><button onclick="try{localStorage.setItem('dna',$('#dnat').value)}catch(e){};render()">Przelicz</button></p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">${br.map(b=>{const m=res.filter(r=>r.hit.includes(b));return`<div class="box"><h3>Linia: ${esc(name(b.g))}</h3><p>${m.length} dopasowań, razem ${m.reduce((a,r)=>a+r.c,0)} cM</p>${m.map(r=>`<div>${esc(r.nm)} – <b>${r.c} cM</b> <small>${r.rel}</small></div>`).join('')}</div>`}).join('')}</div>
+  <h3>Bez przypisanej gałęzi</h3>${res.filter(r=>!r.hit.length).map(r=>`<div>${esc(r.nm)} – <b>${r.c} cM</b> <small>${r.rel}</small></div>`).join('')||'<p>–</p>'}`}
+
+function renderPeople(){
+  const q=($('#pq')?.value||'').toLowerCase(),only=$('#onlym')?.checked;
+  const all=indis().filter(p=>(name(p)+' '+life(p)+' '+(sub(p,'BIRT.PLAC')?.val||'')).toLowerCase().includes(q)&&(!only||matches(p).length))
+    .sort((a,b)=>(sub(a,'NAME.SURN')?.val||name(a)).localeCompare(sub(b,'NAME.SURN')?.val||name(b),'pl')||name(a).localeCompare(name(b),'pl'));
+  const keep=document.activeElement?.id==='pq';
+  $('#main').innerHTML=`<div id="people"><div class="row" style="margin-bottom:10px"><input id="pq" placeholder="Filtruj…" value="${esc(q)}" oninput="renderPeople()">
+    ${other?`<label class="row"><input type="checkbox" id="onlym" ${only?'checked':''} onchange="renderPeople()"> tylko z dopasowaniami</label>`:''}<small>${all.length} osób</small></div>
+   <table><tr><th></th><th>Imię i nazwisko</th><th>Urodzenie</th><th>Zgon</th>${other?'<th>Dopas.</th>':''}</tr>
+   ${all.slice(0,1000).map(p=>`<tr onclick="go('${p.id}','profil')"><td>${avatar(p)}</td><td><b>${esc(name(p))}</b></td><td>${esc(pdate(ev(p,'BIRT')))}</td><td>${esc(pdate(ev(p,'DEAT')))}</td>${other?`<td>${matches(p).length||''}</td>`:''}</tr>`).join('')}</table></div>`;
+  if(keep){const i=$('#pq');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
+}
+
+// ======== wyszukiwarka w pasku ========
+$('#q').oninput=()=>{const q=$('#q').value.toLowerCase().trim(),r=$('#sres');
+  if(!q){r.style.display='none';return}
+  const words=q.split(/\s+/),hits=indis().filter(p=>{const s=(name(p)+' '+life(p)+' '+(sub(p,'BIRT.PLAC')?.val||'')).toLowerCase();return words.every(w=>s.includes(w))}).slice(0,30);
+  r.innerHTML=hits.map(p=>`<div data-id="${p.id}">${avatar(p)}<span><b>${esc(name(p))}</b><br><small>${life(p)}</small></span></div>`).join('')||'<div><small>Brak wyników</small></div>';
+  r.style.display='block'};
+$('#sres').onclick=e=>{const d=e.target.closest('[data-id]');if(!d)return;$('#sres').style.display='none';$('#q').value='';go(d.dataset.id,view==='osoby'?'profil':view)};
+document.addEventListener('click',e=>{if(!e.target.closest('#sbox'))$('#sres').style.display='none';if(!e.target.closest('#menu,#mbtn'))$('#menu').style.display='none'});
+$('#mbtn').onclick=()=>{const m=$('#menu');m.style.display=m.style.display==='block'?'none':'block'};
+$('#nav').onclick=e=>{const v=e.target.dataset.v;if(v){view=v;if(v==='profil')ptab='szczegoly';render()}};
+
+// ======== dopasowania z innym drzewem ========
+let other=null,matchCache={};
+const nk=s=>(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ł/g,'l').replace(/[^a-z ]/g,'').replace(/sz/g,'s').replace(/z/g,'s').replace(/(.)\1/g,'$1');
+const parts=p=>{const v=sub(p,'NAME')?.val||'';return {g:nk(v.split('/')[0]).trim().split(' ')[0],s:nk(v.split('/')[1]).split(' ').filter(w=>w.length>2&&w!=='vel')}};
+const fam=(db,p)=>{const f=t=>kids(p,t).map(k=>db.byId[k.val]).filter(Boolean);
+  return {par:f('FAMC').flatMap(x=>['HUSB','WIFE'].map(t=>db.byId[kid(x,t)?.val])).filter(Boolean),
+    sp:f('FAMS').map(x=>db.byId[kid(x,kid(x,'HUSB')?.val===p.id?'WIFE':'HUSB')?.val]).filter(Boolean),
+    ch:f('FAMS').flatMap(x=>kids(x,'CHIL').map(c=>db.byId[c.val])).filter(Boolean)}};
+const given=ps=>new Set(ps.map(x=>parts(x).g));
+function score(p,me,q,db){const a=parts(p),b=parts(q);if(!a.g||a.g!==b.g||!a.s.some(s=>b.s.includes(s)))return 0;
+  let sc=50;for(const t of['BIRT','DEAT']){const x=+yr(p,t),y=+yr(q,t);if(!x||!y)continue;const d=Math.abs(x-y);if(d>5)return 0;sc+=d<=1?15:5}
+  const fa=fam(me,p),fb=fam(db,q);for(const k of['par','sp','ch']){const B=given(fb[k]);if([...given(fa[k])].some(g=>B.has(g)))sc+=7}
+  return Math.min(sc,100)}
+function loadOther(text,file){const db=parseTo(text);db.file=file;db.idx={};
+  for(const q of db.roots.filter(n=>n.tag==='INDI')){const g=parts(q).g;(db.idx[g]=db.idx[g]||[]).push(q)}
+  other=db;matchCache={};$('#cmpinfo').textContent=`Porównywane z: ${file} – ${indis().filter(p=>matches(p).length).length} osób ma dopasowania (zakładka w profilu, lista „Osoby”).`;render()}
+function matches(p){if(!other)return[];return matchCache[p.id]??=(other.idx[parts(p).g]||[]).map(q=>({q,s:score(p,{byId},q,other)})).filter(x=>x.s>=60).sort((a,b)=>b.s-a.s).slice(0,5)}
+const oname=q=>(sub(q,'NAME')?.val||'').replace(/\//g,'').trim();
+const odesc=q=>`${esc(oname(q))} <small>${life(q)}</small>`;
+function matchCard(p){const ms=matches(p);
+  return `<div class="box"><h2>Dopasowania w: ${esc(other.file)}</h2>${ms.map(({q,s},i)=>{const f=fam(other,q),mine=fam({byId},p),missEv=['BIRT','DEAT'].filter(e=>!yr(p,e)&&yr(q,e));
+    return `<div class="fact" style="grid-template-columns:70px 1fr"><div class="y">${s}%</div><div><b>${esc(oname(q))}</b> <small>${esc(pdate(ev(q,'BIRT')))} ${ev(q,'DEAT')?'– '+esc(pdate(ev(q,'DEAT'))):''}</small>
+     <br><small>Rodzice:</small> ${f.par.map(odesc).join(', ')||'—'}<br><small>Małżonkowie:</small> ${f.sp.map(odesc).join(', ')||'—'}<br><small>Dzieci:</small> ${f.ch.map(odesc).join(', ')||'—'}
+     ${kids(q,'NOTE').length?`<br><small>Notatka:</small> <span class="note">${esc(kids(q,'NOTE').map(n=>noteTxt(n.val)).join('\n'))}</span>`:''}
+     <div class="row" style="margin-top:6px">${missEv.length?`<button onclick="takeEv('${p.id}',${i})">Przejmij ${missEv.map(e=>e==='BIRT'?'urodzenie':'zgon').join(' i ')}</button>`:''}
+     ${!mine.par.length&&f.par.length?`<button onclick="takePar('${p.id}',${i})">Dodaj rodziców (${f.par.length})</button>`:''}</div></div></div>`}).join('')||'<small>Brak dopasowań.</small>'}</div>`}
+const copyEv=(from,to,t)=>{const e=kid(from,t);if(e)setEv(to,t,sub(e,'DATE')?.val||'',sub(e,'PLAC')?.val||'')};
+function takeEv(id,i){const p=byId[id],q=matches(p)[i].q;['BIRT','DEAT'].forEach(e=>{if(!yr(p,e)&&yr(q,e))copyEv(q,p,e)});
+  setKid(p,'NOTE',[kid(p,'NOTE')?.val,`Dane przejęte z: ${other.file} (${oname(q)})`].filter(Boolean).join('\n'));matchCache={};persist();render()}
+function takePar(id,i){const p=byId[id],q=matches(p)[i].q,pars=fam(other,q).par;
+  const f=famsOf(p,'FAMC')[0]||(()=>{const f=newNode('FAM','F');ref(f,'CHIL',id);ref(p,'FAMC',f.id);return f})();
+  for(const o of pars){const t=sex(o)==='F'?'WIFE':'HUSB';if(kid(f,t))continue;const nm=sub(o,'NAME')?.val||'';
+    const n=mkPerson([nm.split('/')[0].trim(),(nm.split('/')[1]||'').trim()],sex(o));copyEv(o,n,'BIRT');copyEv(o,n,'DEAT');setKid(n,'NOTE',`Dodano z: ${other.file}`);ref(f,t,n.id);ref(n,'FAMS',f.id)}
+  matchCache={};persist();render()}
+
+// ======== zapis w przeglądarce + cofanie ========
+// ponytail: localStorage ~5MB; cofanie trzyma pełne kopie (~0.5MB) – limit 30 kroków
+let undoStack=[],lastSaved='';
+const undoBtn=()=>{$('#undo').disabled=!undoStack.length;$('#undo').textContent=`↶ Cofnij${undoStack.length?' ('+undoStack.length+')':''}`};
+let unsaved=false,asT=0; // autozapis: po każdej zmianie (z opóźnieniem 1,5 s) do otwartego pliku
+function persist(){const s=ser();if(lastSaved&&s!==lastSaved){setDirty(true);unsaved=true;clearTimeout(asT);asT=setTimeout(()=>saveFile(true),1500);undoStack.push([lastSaved,cur]);if(undoStack.length>30)undoStack.shift()}lastSaved=s;matchCache={};undoBtn();
+  idb('readwrite',st=>st.put(s,'ged')).catch(()=>alert('Nie udało się zapamiętać zmian w przeglądarce – kliknij „Zapisz”, żeby nie stracić zmian.'));try{localStorage.removeItem('ged')}catch(e){}}
+function undo(){if(!undoStack.length)return;let at;[lastSaved,at]=undoStack.pop();unsaved=true;clearTimeout(asT);asT=setTimeout(()=>saveFile(true),1500);parse(lastSaved);matchCache={};undoBtn();if(byId[at])cur=at;sel=null;
+  idb('readwrite',st=>st.put(lastSaved,'ged')).catch(()=>{});render()}
+function load(text,keepDirty){parse(text);undoStack=[];lastSaved='';persist();if(!keepDirty)setDirty(false);const h=decodeURIComponent(location.hash.slice(1));cur=byId[h]?h:indis()[0]?.id;render()}
+// zapis do tego samego pliku: File System Access API (Chrome/Edge); uchwyt pamiętany w IndexedDB
+let fileHandle=null,fileMod=0; // fileMod: data zmiany pliku przy wczytaniu – chroni przed nadpisaniem nowszego pliku starą kopią
+const idb=(mode,fn)=>new Promise((ok,no)=>{const r=indexedDB.open('drzewo',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onsuccess=()=>{const tx=r.result.transaction('h',mode),q=fn(tx.objectStore('h'));tx.oncomplete=()=>ok(q&&q.result);tx.onerror=()=>no(tx.error)};r.onerror=()=>no(r.error)});
+const setHandle=h=>{fileHandle=h;$('#save').textContent=h?`Zapisz (${h.name})`:'Zapisz .ged';$('#save').title=h?'Zapisuje zmiany do otwartego pliku':'Pobierz plik';idb('readwrite',s=>s.put(h,'f')).catch(()=>{})};
+async function openFile(){
+  if(!window.showOpenFilePicker)return $('#file').click(); // inne przeglądarki: zwykłe wczytanie
+  try{const [h]=await showOpenFilePicker({types:[{description:'GEDCOM',accept:{'text/plain':['.ged']}}]});
+    const f=await h.getFile();load(await gedText(f));setHandle(h);setMod(f.lastModified);setDirty(false);$('#menu').style.display='none'}catch(e){}}
+const setDirty=d=>idb('readwrite',s=>s.put(d,'dirty')).catch(()=>{});
+const setMod=m=>{fileMod=m;idb('readwrite',s=>s.put(m,'mod')).catch(()=>{})};
+async function saveFile(auto){
+  if(auto===true&&!fileHandle)return; // autozapis tylko do otwartego pliku – bez pobierania kopii
+  if(!fileHandle&&window.showSaveFilePicker&&auto!==true){try{setHandle(await showSaveFilePicker({suggestedName:'drzewo_uzupelnione.ged',types:[{description:'GEDCOM',accept:{'text/plain':['.ged']}}]}));fileMod=0}catch(e){return}}
+  if(fileHandle){try{
+    if(await fileHandle.queryPermission({mode:'readwrite'})!=='granted'){if(auto===true)return;if(await fileHandle.requestPermission({mode:'readwrite'})!=='granted')throw 0}
+    const disk=await fileHandle.getFile();
+    if(disk.lastModified!==fileMod&&auto===true){$('#save').textContent='⚠ Plik zmieniony – kliknij, by zapisać';return} /* autozapis nie nadpisuje cudzych zmian */
+    if(disk.lastModified!==fileMod&&(!confirm(`Plik „${fileHandle.name}” na dysku zmienił się od czasu wczytania (np. poprawiony gdzie indziej).
+Nadpisać go tym, co jest teraz w aplikacji?
+
+Anuluj = nie zapisuj; potem wczytaj plik ponownie (☰ → Otwórz plik).`)))return;
+    const w=await fileHandle.createWritable();await w.write(ser());await w.close();setMod((await fileHandle.getFile()).lastModified);setDirty(false);unsaved=false;
+    $('#save').textContent=auto===true?'✓ Zapisano automatycznie':'✓ Zapisano';setTimeout(()=>setHandle(fileHandle),1500);return}catch(e){if(auto===true)return;alert('Nie udało się zapisać do pliku – zostanie pobrana kopia.')}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ser()],{type:'text/plain'}));a.download=fileHandle?.name||'drzewo.ged';a.click()}
+
+// przy wyjściu/przełączeniu karty: zapisz od razu; gdy zapis się nie udał – przeglądarka zapyta przed zamknięciem
+addEventListener('visibilitychange',()=>{if(document.hidden&&unsaved){clearTimeout(asT);saveFile(true)}});
+addEventListener('beforeunload',e=>{if(unsaved){saveFile(true);e.preventDefault();e.returnValue=''}});
+addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveFile()}});
+$('#file').onchange=e=>{const f=e.target.files[0];if(f)gedText(f).then(t=>{load(t);$('#menu').style.display='none'});e.target.value=''};
+$('#cmp').onchange=e=>{const f=e.target.files[0];if(f)gedText(f).then(t=>loadOther(t,f.name));e.target.value=''};
+$('#save').onclick=saveFile;
+onkeydown=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();undo()}
+  if(e.altKey&&e.key==='ArrowLeft'){e.preventDefault();back()}if(e.altKey&&e.key==='ArrowRight'){e.preventDefault();forward()}
+  if(e.key==='Escape'){$('#sres').style.display='none';if(view==='drzewo'||view==='przodkowie')showPanel(null)}};
+// motyw: wybiera użytkownik (domyślnie jasny jak MyHeritage)
+const setTheme=t=>{document.documentElement.dataset.theme=t;$('#theme').value=t;try{localStorage.setItem('theme',t)}catch(e){}};
+$('#theme').onchange=e=>setTheme(e.target.value);
+try{setTheme(localStorage.getItem('theme')||'light')}catch(e){setTheme('light')}
+// start: ostatnio otwarty plik wczytywany automatycznie z dysku (jeśli przeglądarka pozwala); niezapisane zmiany mają pierwszeństwo
+(async()=>{const g=k=>idb('readonly',st=>st.get(k)).catch(()=>null);
+  const [h,mod,dirty]=[await g('f'),await g('mod'),await g('dirty')];let s=await g('ged');try{s=s||localStorage.getItem('ged')}catch(e){}
+  const fromDisk=async()=>{const f=await h.getFile();load(await gedText(f));setMod(f.lastModified);setDirty(false)};
+  if(h){setHandle(h);fileMod=mod||0;
+    if(!dirty){try{if(await h.queryPermission({mode:'readwrite'})==='granted')return await fromDisk()}catch(e){}
+      // przeglądarka wymaga jednego kliknięcia, by znów dać dostęp do pliku
+      const b=document.createElement('div');b.id='reopen';b.innerHTML=`<button class="pri">Otwórz ${esc(h.name)}</button> <small>przeglądarka prosi o jedno kliknięcie, by wczytać plik z dysku</small>`;
+      b.style.cssText='position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:50;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center';
+      b.querySelector('button').onclick=async()=>{try{if(await h.requestPermission({mode:'readwrite'})==='granted'){b.remove();await fromDisk()}}catch(e){b.remove();openFile()}};document.body.append(b)}}
+  s?load(s,dirty):render()})();
+</script>
+</body>
+</html>
