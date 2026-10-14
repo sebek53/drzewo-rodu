@@ -108,6 +108,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
   </div>
 </div>
 <main id="main"></main>
+<script src="geo.js"></script>
 <script>
 // ======== GEDCOM: węzły {lvl,id,tag,val,kids}, zapis 1:1 z powrotem ========
 let topView=false,keepView=null,lastTap={},roots=[],byId={},cur=null,sel=null,view='drzewo',ptab='szczegoly',gens=3,dgens=1,zoomLvl=1,all=false;
@@ -557,7 +558,8 @@ function renderProfile(){
 // ======== mapa: gdzie żyły osoby, kolor = pokolenie względem wybranej osoby ========
 // współrzędne: GEO (wbudowane) + cache przeglądarki; nowe miejsca dociągane z OpenStreetMap (1 zapytanie/s)
 var GEO={}; // współrzędne miejscowości z drzewa: wczytywane z lokalnego geo.json (prywatny, poza repozytorium)
-fetch('geo.json').then(r=>r.ok?r.json():{}).then(g=>{Object.assign(GEO,g);if(view==='mapa')render()}).catch(()=>{});var geoC={};try{geoC=JSON.parse(localStorage.getItem('geo')||'{}')}catch(e){}
+Object.assign(GEO,window.GEO_LOCAL||{}); // geo.js (lokalny, poza repozytorium) – działa przez serwer i po otwarciu pliku z dysku
+var geoC={};try{geoC=JSON.parse(localStorage.getItem('geo')||'{}')}catch(e){}
 var geoFix={};try{geoFix=JSON.parse(localStorage.getItem('geofix')||'{}')}catch(e){}
 var geo=p=>!/^\s*(poland|polska|polen|usa|niemcy|germany)\s*$/i.test(p)&&(geoFix[p]||GEO[p]||geoC[p]); // ręczna poprawka > wbudowane > pobrane
 var movePl=null; // „Popraw położenie”: następny klik na mapie ustawia punkt
