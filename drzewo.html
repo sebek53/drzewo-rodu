@@ -723,10 +723,39 @@ function renderSiec(){const ALL=links(),E=ALL.filter(e=>siecRole==='all'||e.role
    <h3>Opis powiązań (${E.length})</h3>${E.map(e=>`<div class="fact" style="grid-template-columns:1fr"><div><b>${esc(e.b?name(e.b):e.bn)}</b> <span style="background:${ROLE[e.role][1]};color:#fff;border-radius:8px;padding:0 6px;font-size:11px">${ROLE[e.role][0]}</span> u <a href="#" onclick="go('${e.a.id}','profil');return false">${esc(name(e.a))}</a><br><small class="mut">„${esc(e.zd.slice(0,240))}”</small></div></div>`).join('')}</div>`}
 // Oś czasu na tle historii
 const HIST=[[1655,'Potop szwedzki'],[1709,'Wielka zaraza (dżuma) na Mazowszu'],[1733,'Wojna o sukcesję polską'],[1764,'Stanisław August Poniatowski królem'],[1772,'I rozbiór Polski'],[1791,'Konstytucja 3 Maja'],[1793,'II rozbiór – Mazowsze pod Prusami'],[1794,'Powstanie kościuszkowskie'],[1795,'III rozbiór – koniec Rzeczypospolitej'],[1807,'Księstwo Warszawskie'],[1808,'Kodeks Napoleona – akta stanu cywilnego'],[1812,'Wyprawa Napoleona na Moskwę'],[1815,'Królestwo Polskie (Kongresowe)'],[1830,'Powstanie listopadowe'],[1831,'Epidemia cholery'],[1848,'Wiosna Ludów; cholera'],[1852,'Epidemia cholery'],[1863,'Powstanie styczniowe'],[1864,'Uwłaszczenie chłopów'],[1868,'Akta metrykalne po rosyjsku (do 1917)'],[1880,'Emigracja „za chlebem” do USA (1880–1914)'],[1905,'Rewolucja 1905'],[1914,'I wojna światowa'],[1918,'Niepodległość Polski'],[1920,'Wojna polsko-bolszewicka'],[1929,'Wielki kryzys'],[1939,'II wojna światowa'],[1945,'Koniec wojny; reforma rolna'],[1956,'Odwilż październikowa'],[1970,'Grudzień 1970'],[1980,'Solidarność'],[1989,'Upadek PRL'],[2004,'Polska w Unii Europejskiej']];
+
+// zabory: wydarzenia przypisane do zaboru (R/P/A); zabór osoby z miejsca urodzenia (przybliżenie po współrzędnych)
+const ZAB={R:'zabór rosyjski',P:'zabór pruski',A:'zabór austriacki'};
+[[/Królestwo Polskie|listopadowe|styczniowe|Uwłaszczenie chłopów|po rosyjsku|Rewolucja 1905/,'R']].forEach(([re,z])=>HIST.forEach(h=>{if(re.test(h[1]))h[2]=z}));
+HIST.push([1823,'Uwłaszczenie chłopów w Wielkopolsce (ustawa pruska)','P'],[1832,'Statut organiczny – likwidacja autonomii Królestwa','R'],[1846,'Rabacja galicyjska; koniec Wolnego Miasta Krakowa','A'],
+  [1848,'Uwłaszczenie chłopów w Galicji','A'],[1848,'Powstanie wielkopolskie (Wiosna Ludów)','P'],[1867,'Autonomia Galicji – polski język urzędowy','A'],[1872,'Kulturkampf – germanizacja szkół i Kościoła','P'],
+  [1874,'Pruskie urzędy stanu cywilnego (Standesamt) – akta USC','P'],[1874,'Królestwo przemianowane na Kraj Przywiślański','R'],[1885,'Rusyfikacja szkół w Królestwie','R'],[1886,'Komisja Kolonizacyjna – wykup ziemi z rąk polskich','P'],
+  [1901,'Strajk dzieci we Wrześni','P'],[1904,'Wóz Drzymały – zakaz budowy domów','P'],[1915,'Bitwa pod Gorlicami; ewakuacja ludności na wschód','A'],[1915,'Bieżeństwo – wysiedlenie ludności w głąb Rosji','R'],[1918,'Powstanie wielkopolskie (1918–1919)','P'],[1919,'Powstania śląskie (1919–1921)','P']);
+HIST.sort((a,b)=>a[0]-b[0]);
+function zabor(ll,y){if(!ll)return null;const[la,lo]=ll;if(la<48.5||la>56||lo<13.5||lo>27)return null;if(y&&y<1772)return null;
+  if(la<50.6&&lo>19.25)return'A';if(lo<17.9||(la>52.6&&lo<18.75)||(la>53.3&&lo<20.6)||(la<50.6&&lo<19.25))return'P';return'R'} // ponytail: granice zaborów z grubsza (prostokąty), mylą się przy samej granicy
+const bplace=p=>['BIRT','CHR','BAPM','RESI','DEAT'].map(t=>sub(p,t+'.PLAC')?.val).find(Boolean);
+const geoAny=pl=>{if(!pl)return null;const n=plName(pl).toLowerCase();return geo(pl)||geo(plName(pl))||Object.entries({...GEO,...geoC}).find(([k,v])=>v&&plName(k).toLowerCase()===n)?.[1]||null}; // „Łódź, par. św. Wojciecha” → Łódź
+const zabOf=p=>{const pl=bplace(p);return zabor(geoAny(pl),by_(p))};
+const histFor=(zs)=>HIST.filter(h=>!h[2]||!zs.size||zs.has(h[2])); // wydarzenia ogólne + właściwe dla zaborów rodziny
+const zabTag=h=>h[2]?` <small style="background:#eef;border-radius:6px;padding:0 5px">${ZAB[h[2]]}</small>`:'';
+// historia miejscowości z polskiej Wikipedii (sekcja „Historia”); lata z okresu życia rodziny w tej miejscowości pogrubione
+const plName=pl=>pl.replace(/\(.*?\)/g,' ').replace(/\b(par\.?|paraf\.?|parafia|gm\.?|pow\.?|akt\S*|cm\.?|cmentarz)\b.*$/i,'').split(/[,;]/)[0].replace(/\s+\d+.*$/,'').trim();
+async function wikiPlace(pl,od,dok,el){const n=plName(pl);if(!n){el.innerHTML='';return}
+  try{const W='https://pl.wikipedia.org/w/api.php?format=json&origin=*&action=query&';
+    const sr=(await (await fetch(W+'list=search&srlimit=5&srsearch='+encodeURIComponent(n))).json()).query?.search||[],hit=sr.find(x=>x.title.toLowerCase().startsWith(n.toLowerCase()))||sr[0];
+    if(!hit){el.innerHTML=`<p><small>Brak hasła „${esc(n)}” w Wikipedii.</small></p>`;return}
+    const pg=Object.values((await (await fetch(W+'prop=extracts&explaintext=1&exsectionformat=wiki&titles='+encodeURIComponent(hit.title))).json()).query.pages)[0];
+    const tx=pg.extract||'',m=tx.match(/==\s*Historia\s*==([\s\S]*?)(?:\n==[^=]|$)/),body=(m?m[1]:tx.split('\n==')[0]).replace(/===?[^=]+===?/g,'').trim().slice(0,3500);
+    const hl=esc(body).replace(/\b(1[0-9]{3})\b/g,y=>+y>=od&&+y<=dok?`<b style="background:#fff3bf">${y}</b>`:y).replace(/\n+/g,'</p><p>');
+    el.innerHTML=`<h3>Historia miejscowości: <a href="https://pl.wikipedia.org/wiki/${encodeURIComponent(hit.title)}" target="_blank" rel="noopener">${esc(hit.title)}</a> <small>(Wikipedia – sprawdź, czy to ta sama miejscowość)</small></h3><p>${hl||'<small>Hasło nie ma opisu historii.</small>'}</p>`}
+  catch(e){el.innerHTML='<p><small>Nie udało się pobrać hasła z Wikipedii (brak internetu?).</small></p>'}}
+const sgkpLink=pl=>`<a href="https://www.google.com/search?q=${encodeURIComponent('site:dir.icm.edu.pl Słownik geograficzny "'+plName(pl)+'"')}" target="_blank" rel="noopener">📖 Słownik geograficzny Królestwa Polskiego (1880–1902): „${esc(plName(pl))}”</a>`;
 function histTab(p){const b=by_(p);if(!b)return'<small>Brak roku urodzenia.</small>';const d=dy_(p)||Math.min(new Date().getFullYear(),b+80);
-  const ev=[[b,'urodzenie',1],...HIST.filter(([y])=>y>=b&&y<=d),...(dy_(p)?[[dy_(p),'zgon',1]]:[]),
+  const z=zabOf(p),ev=[[b,'urodzenie',1],...histFor(new Set(z?[z]:[])).filter(([y])=>y>=b&&y<=d),...(dy_(p)?[[dy_(p),'zgon',1]]:[]),
     ...childrenOf(p).filter(by_).map(c=>[by_(c),`dziecko: ${name(c)}`,1]),...famsOf(p,'FAMS').filter(f=>Y(f,'MARR')).map(f=>[Y(f,'MARR'),'ślub',1])].sort((a,b)=>a[0]-b[0]);
-  return ev.map(([y,t,k])=>`<div class="fact"><b>${y}</b><div>${k?`<b>${esc(t)}</b>`:esc(t)} <small class="mut">– wiek ${y-b}</small></div></div>`).join('')}
+  const pl=bplace(p),wk=pl&&(geo(pl)?geo(pl).join():pl.toLowerCase().trim());
+  return(z?`<p><small>Miejsce: ${esc(pl)} – <b>${ZAB[z]}</b> (wydarzenia dobrane do zaboru)</small></p>`:'')+(pl?`<p>${sgkpLink(pl)} · <a href="#" onclick="aSel.wk='${esc(wk).replace(/'/g,'')}';atab='wies';view='analizy';render();return false">🏘 Historia miejscowości i kto tam żył</a></p>`:'')+ev.map(e=>{const[y,t,k]=e;return`<div class="fact"><b>${y}</b><div>${k===1?`<b>${esc(t)}</b>`:esc(t)+zabTag(e)} <small class="mut">– wiek ${y-b}</small></div></div>`}).join('')}
 // Gdzie szukać dalej – reguły dla Suserza i okolic
 function whereTab(p){const b=by_(p),d=dy_(p),pl=((sub(p,'BIRT.PLAC')?.val||'')+' '+(sub(p,'DEAT.PLAC')?.val||'')+' '+kids(p,'NOTE').map(n=>noteTxt(n.val)).join(' ')).toLowerCase(),L=[];
   const sus=/suserz|łuszczan|słup|szczawin|waliszew|potrzask/.test(pl);
@@ -798,12 +827,12 @@ const selS=(k,opts,v)=>`<select data-a="${k}">${opts.map(([a,b])=>`<option value
 // 1. oś czasu rodu: urodzenia/zgony na dekady + zdarzenia historyczne + zgony w latach epidemii
 function aOs(){const sl=surnameList(),k=aSel.osk??'';const ps=indis().filter(p=>!k||srnKeyOf(p)===k);const dec={};
   ps.forEach(p=>{const b=by_(p),d=dy_(p);if(b)(dec[b-b%10]??={b:0,d:0,k:0}).b++;if(d){(dec[d-d%10]??={b:0,d:0,k:0}).d++;if(b&&d-b<5)dec[d-d%10].k++}});
-  const ks=Object.keys(dec).map(Number).sort((a,b)=>a-b),mx=Math.max(1,...ks.map(x=>Math.max(dec[x].b,dec[x].d)));
+  const zs=new Set(ps.map(zabOf).filter(Boolean)),ks=Object.keys(dec).map(Number).sort((a,b)=>a-b),mx=Math.max(1,...ks.map(x=>Math.max(dec[x].b,dec[x].d)));
   const ep=EPID.map(([a,b,t])=>({a,b,t,l:ps.filter(p=>{const d=dy_(p);return d>=a&&d<=b})})).filter(e=>e.l.length);
   return`<p>Nazwisko: ${selS('osk',[['','całe drzewo'],...sl.map(s=>[s.k,`${s.t} (${s.n})`])],k)}</p>
-  <div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px">${ks.map(x=>{const h=HIST.filter(([y])=>y>=x&&y<x+10).map(z=>z[1]).join('; '),e=EPID.filter(([a,b])=>a<x+10&&b>=x).map(z=>z[2]).join(', ');
+  <div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px">${ks.map(x=>{const h=histFor(zs).filter(([y])=>y>=x&&y<x+10).map(z=>z[1]+(z[2]?` (${ZAB[z[2]].replace('zabór ','')})`:'')).join('; '),e=EPID.filter(([a,b])=>a<x+10&&b>=x).map(z=>z[2]).join(', ');
    return`<tr><td style="padding:2px 8px"><b>${x}s</b></td><td style="width:340px"><div style="background:#2b8a3e;height:9px;width:${dec[x].b/mx*320}px" title="urodzenia ${dec[x].b}"></div><div style="background:#868e96;height:9px;width:${dec[x].d/mx*320}px;margin-top:1px" title="zgony ${dec[x].d}"></div></td><td style="padding:2px 8px">${dec[x].b} ur. / ${dec[x].d} zm.${dec[x].k?` <b style="color:#e03131">(${dec[x].k} dzieci &lt;5 lat)</b>`:''}</td><td style="padding:2px 8px;color:#555">${esc(h)}${e?` <b style="color:#e03131">☣ ${esc(e)}</b>`:''}</td></tr>`}).join('')}</table></div>
-  <p><small>zielony = urodzenia, szary = zgony</small></p><h3>Zgony w latach epidemii</h3>${ep.map(e=>`<p><b>${e.a}${e.b>e.a?'–'+e.b:''} ${e.t}:</b> ${e.l.map(p=>`${lnk(p)} <small>(${life(p)})</small>`).join(', ')}</p>`).join('')||'<p>Brak zgonów w znanych latach epidemii.</p>'}`}
+  <p><small>zielony = urodzenia, szary = zgony. Wydarzenia dobrane do zaborów, w których żyła ta grupa: ${[...zs].map(z=>ZAB[z]).join(', ')||'–'} (wg miejsc urodzenia).</small></p><h3>Zgony w latach epidemii</h3>${ep.map(e=>`<p><b>${e.a}${e.b>e.a?'–'+e.b:''} ${e.t}:</b> ${e.l.map(p=>`${lnk(p)} <small>(${life(p)})</small>`).join(', ')}</p>`).join('')||'<p>Brak zgonów w znanych latach epidemii.</p>'}`}
 
 // 2. kto żył w tej wsi: wszystkie osoby z jakimkolwiek wydarzeniem w miejscowości, w wybranym okresie; zaznacza niepołączonych z wybraną osobą
 function aWies(){const pk=pl=>{const g=geo(pl);return g?g.join():pl.toLowerCase().trim()},ev=[];
@@ -815,6 +844,7 @@ function aWies(){const pk=pl=>{const g=geo(pl);return g?g.join():pl.toLowerCase(
   const hit=ev.filter(e=>pk(e.pl)===k&&(!e.y||e.y>=od&&e.y<=dok)).sort((a,b)=>(a.y||9999)-(b.y||9999));const per=[...new Set(hit.map(h=>h.p))];
   return`<p>Miejscowość: ${selS('wk',L.map(x=>[x.k,`${x.nm} (${x.n})`]),k)} od roku <input data-a="wod" value="${od||''}" size="5"> do <input data-a="wdo" value="${dok<9999?dok:''}" size="5"></p>
   <p>${per.length} osób. <span style="background:#fff3bf;padding:0 4px">Podświetleni</span> nie mają w drzewie połączenia z osobą ${esc(name(byId[cur]))} – możliwi krewni do sprawdzenia.</p>
+  <p>${hit[0]?sgkpLink(hit[0].pl):''}</p><div id="wiki"><small>Pobieram historię miejscowości z Wikipedii…</small></div>${hit[0]?`<img src="data:," style="display:none" onerror="wikiPlace(decodeURIComponent('${encodeURIComponent(hit[0].pl)}'),${od||0},${dok},document.getElementById('wiki'))">`:''}<h3>Osoby</h3>
   ${hit.map(h=>`<div style="padding:3px 6px;${h.p.id in G?'':'background:#fff3bf'}"><b>${h.y||'?'}</b> ${TG[h.t]||h.t}: ${lnk(h.p)} <small>(${life(h.p)}) – ${esc(h.pl)}</small></div>`).join('')}`}
 
 // 3. listy do archiwów: gotowe zapytania uzupełnione danymi osoby
