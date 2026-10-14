@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="pl">
 <head>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Great+Vibes&display=swap">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Drzewo rodu</title>
@@ -90,7 +91,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 <body>
 <div id="top">
   <span id="logo">🌳 Drzewo rodu</span>
-  <span id="nav"><button data-v="drzewo">Drzewo</button><button data-v="przodkowie">Przodkowie</button><button data-v="profil">Profil</button><button data-v="osoby">Osoby</button><button data-v="mapa">Mapa</button><button data-v="notatki">Notatki</button><button data-v="siec">Sieć</button><button data-v="kontrola">Sprzeczności</button><button data-v="analizy">Analizy</button></span>
+  <span id="nav"><button data-v="drzewo">Drzewo</button><button data-v="przodkowie">Przodkowie</button><button data-v="profil">Profil</button><button data-v="osoby">Osoby</button><button data-v="mapa">Mapa</button><button data-v="notatki">Notatki</button><button data-v="siec">Sieć</button><button data-v="kontrola">Sprzeczności</button><button data-v="analizy">Analizy</button><button data-v="plakat">Plakat</button></span>
   <div id="sbox"><input id="q" placeholder="Szukaj osoby…" autocomplete="off"><div id="sres"></div></div>
   <div id="tools">
     <button id="undo" onclick="undo()" disabled title="Ctrl+Z">↶ Cofnij</button>
@@ -117,7 +118,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 // ======== język interfejsu (PL/EN): tłumaczenie napisów w DOM; dane z drzewa (imiona, miejsca, notatki) bez zmian ========
 // ponytail: słownik + reguły na gotowym DOM zamiast przepisywania szablonów; nowy napis w kodzie = dopisać go tutaj
 var LANG='pl';try{LANG=localStorage.getItem('lang')||(navigator.language.startsWith('pl')?'pl':'en')}catch(e){}
-const EN={'Klucz Claude (odczyt aktów)':'Claude key (reading records)','☕ Postaw kawę autorowi':'☕ Buy the author a coffee','Brak skanów aktów':'No record scans','Dołącz zdjęcie aktu i odczytaj je w zakładce „Odczytaj akt”.':'Attach a photo of the record and read it in the “Read record” tab.','Imię i nazwisko':'Full name','z kim rodzina żyła na co dzień':'who the family lived with day to day','sąsiedzi, krewni lub kumowie':'neighbours, relatives or godparents','– często wskazówka do nieznanego pokrewieństwa.':'– often a clue to an unknown relationship.','Najczęściej występujący:':'Most frequent:','Pokazuje,':'Shows','Osoba':'Person','Drzewo':'Tree','Przodkowie':'Ancestors','Profil':'Profile','Osoby':'People','Mapa':'Map','Notatki':'Notes','Sieć':'Network','Sprzeczności':'Conflicts','Analizy':'Analyses',
+const EN={'Plakat':'Poster','Plakat drzewa':'Family tree poster','Pokolenia przodków':'Ancestor generations','Pokolenia potomków':'Descendant generations','zdjęcia osób':'photos of people','⬇ Pobierz PNG (do druku)':'⬇ Download PNG (for print)','⬇ Pobierz SVG':'⬇ Download SVG','Przygotowuję…':'Preparing…','Klucz Claude (odczyt aktów)':'Claude key (reading records)','☕ Postaw kawę autorowi':'☕ Buy the author a coffee','Brak skanów aktów':'No record scans','Dołącz zdjęcie aktu i odczytaj je w zakładce „Odczytaj akt”.':'Attach a photo of the record and read it in the “Read record” tab.','Imię i nazwisko':'Full name','z kim rodzina żyła na co dzień':'who the family lived with day to day','sąsiedzi, krewni lub kumowie':'neighbours, relatives or godparents','– często wskazówka do nieznanego pokrewieństwa.':'– often a clue to an unknown relationship.','Najczęściej występujący:':'Most frequent:','Pokazuje,':'Shows','Osoba':'Person','Drzewo':'Tree','Przodkowie':'Ancestors','Profil':'Profile','Osoby':'People','Mapa':'Map','Notatki':'Notes','Sieć':'Network','Sprzeczności':'Conflicts','Analizy':'Analyses',
 'Szukaj osoby…':'Search person…','🔍 Szukaj osoby…':'🔍 Search person…','↶ Cofnij':'↶ Undo','Zapisz .ged':'Save .ged','Otwórz plik .ged':'Open .ged file','Nowe drzewo…':'New tree…','Wygląd':'Appearance','Jasny':'Light','Ciemny':'Dark','Jak w systemie':'System',
 'Porównaj z innym drzewem':'Compare with another tree','Pobierz plik do importu w MyHeritage':'Download file for MyHeritage import','Język':'Language',
 'Twoje drzewo rodu':'Your family tree','…albo zacznij nowe drzewo':'…or start a new tree','Imię (imiona)':'Given name(s)','Nazwisko':'Surname','mężczyzna':'male','kobieta':'female','Miejsce urodzenia':'Place of birth',
@@ -331,7 +332,7 @@ function render(){
      <button class="pri">Utwórz drzewo i zapisz plik .ged</button></form></div>`;$('#nt').onsubmit=e=>{e.preventDefault();newTree(Object.fromEntries(new FormData(e.target)))};return}
   if(!byId[cur])cur=indis()[0].id;
   history.replaceState(null,'','#'+cur);
-  if(lmap&&view!=='mapa'){lmap.remove();lmap=null}({drzewo:()=>{pview=false;renderTree()},przodkowie:()=>{pview=true;if(zoomLvl<.5)zoomLvl=.8;renderTree()},profil:renderProfile,osoby:renderPeople,mapa:renderMap,notatki:renderNotes,siec:renderSiec,kontrola:renderKontrola,analizy:renderAnaliz})[view]();
+  if(lmap&&view!=='mapa'){lmap.remove();lmap=null}({drzewo:()=>{pview=false;renderTree()},przodkowie:()=>{pview=true;if(zoomLvl<.5)zoomLvl=.8;renderTree()},profil:renderProfile,osoby:renderPeople,mapa:renderMap,notatki:renderNotes,siec:renderSiec,kontrola:renderKontrola,analizy:renderAnaliz,plakat:renderPlakat})[view]();
 }
 
 // ======== widok drzewa (jak MyHeritage) ========
@@ -988,6 +989,80 @@ function aDna(){let raw='';try{raw=localStorage.getItem('dna')||''}catch(e){}
   <textarea id="dnat" style="width:100%;height:120px" placeholder="Szymon Garstka; 85; Garstka, Kowalczyk">${esc(raw)}</textarea><p><button onclick="try{localStorage.setItem('dna',$('#dnat').value)}catch(e){};render()">Przelicz</button></p>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">${br.map(b=>{const m=res.filter(r=>r.hit.includes(b));return`<div class="box"><h3>Linia: ${esc(name(b.g))}</h3><p>${m.length} dopasowań, razem ${m.reduce((a,r)=>a+r.c,0)} cM</p>${m.map(r=>`<div>${esc(r.nm)} – <b>${r.c} cM</b> <small>${r.rel}</small></div>`).join('')}</div>`}).join('')}</div>
   <h3>Bez przypisanej gałęzi</h3>${res.filter(r=>!r.hit.length).map(r=>`<div>${esc(r.nm)} – <b>${r.c} cM</b> <small>${r.rel}</small></div>`).join('')||'<p>–</p>'}`}
+
+// ======== Plakat: drzewo do druku w stylu pergaminu (przodkowie nad osobą, potomkowie pod nią) ========
+var pk={up:3,dn:2,photos:true,title:'',m1:'VIRTUS\nTRADITIO\nFAMILIA',m2:'HONOR\nMEMORIA\nPOSTERITAS',b1:'Korzenie dają siłę…',b2:'…a potomkowie nadają sens.',herb:''};
+// dopełniacz do tytułu: „Józef Wiatrowski” → „Józefa Wiatrowskiego”, „Anna Garstka” → „Anny Garstki” (proste reguły; tytuł można poprawić ręcznie)
+function dopelniacz(p){const F=sex(p)==='F',w=cardName(p).n.split(' ');
+  const g=x=>{const l=x.toLowerCase();if(F){if(/(sk|ck|dzk)a$/.test(l))return x.slice(0,-1)+'iej';if(/na$/.test(l))return x.slice(0,-1)+'ej';if(/ia$/.test(l))return x.slice(0,-1)+'i';if(/[kgl]a$/.test(l))return x.slice(0,-1)+'i';if(/a$/.test(l))return x.slice(0,-1)+'y';return x}
+    if(/(sk|ck|dzk)i$/.test(l))return x+'ego';if(/ny$/.test(l))return x.slice(0,-1)+'ego';if(/[kg]a$/.test(l))return x.slice(0,-1)+'i';if(/a$/.test(l))return x.slice(0,-1)+'y';if(/ek$/.test(l))return x.slice(0,-2)+'ka';if(/[bcćdfghjklłmnńprsśtwzźż]$/.test(l))return x+'a';return x};
+  return w.map(g).join(' ')}
+function plakatSVG(){const root=byId[cur],SW=150,RH=150,CW=132,PR=26,top=230;let rows=[],lines=[];
+  const yrs=p=>{const b=by_(p),d=dy_(p);return b||d?`${b?'ur. '+b:''}${b&&d?' – ':''}${d?'zm. '+d:''}`:''};
+  const par=p=>{const f=famsOf(p,'FAMC')[0];return f?[byId[kid(f,'HUSB')?.val],byId[kid(f,'WIFE')?.val]].filter(Boolean):[]};
+  // szerokość poddrzewa przodków (w slotach) i potomków
+  const wu=(p,g)=>g>=pk.up||!par(p).length?1:par(p).reduce((a,x)=>a+wu(x,g+1),0);
+  const kidsOf=p=>marrOrd(p).flatMap(f=>kids(f,'CHIL').map(c=>byId[c.val]).filter(Boolean));
+  const wd=(p,g)=>g>=pk.dn||!kidsOf(p).length?1:kidsOf(p).reduce((a,x)=>a+wd(x,g+1),0);
+  const sp=marrOrd(root).map(f=>spouseIn(f,root.id)).filter(Boolean).slice(0,1);
+  const W=Math.max(wu(root,0),wd(root,0),1+sp.length)*SW,cards=[],y0=top+pk.up*RH;
+  const card=(p,x,y)=>cards.push({p,x,y});
+  const placeUp=(p,g,x0,w)=>{const x=x0+w*SW/2,y=y0-g*RH;card(p,x,y);if(g>=pk.up)return x;const ps=par(p);if(!ps.length)return x;
+    let xx=x0;const cx=ps.map(q=>{const ww=wu(q,g+1),c=placeUp(q,g+1,xx,ww);xx+=ww*SW;return c});
+    const yb=y-RH/2-8;lines.push(`M${x} ${y-PR}V${yb}`,`M${Math.min(...cx)} ${yb}H${Math.max(...cx)}`,...cx.map(c=>`M${c} ${yb}V${y-RH+48}`));return x};
+  const placeDn=(p,g,x0,w,y)=>{const ks=kidsOf(p);if(g>=pk.dn||!ks.length)return;let xx=x0;const cx=ks.map(k=>{const ww=wd(k,g+1),c=xx+ww*SW/2;card(k,c,y+RH);placeDn(k,g+1,xx,ww,y+RH);xx+=ww*SW;return c});
+    const yb=y+RH/2+18;lines.push(`M${(cardsX.get(p.id)??x0+w*SW/2)} ${y+48}V${yb}`,`M${Math.min(...cx)} ${yb}H${Math.max(...cx)}`,...cx.map(c=>`M${c} ${yb}V${y+RH-PR}`))};
+  const uw=wu(root,0)*SW;placeUp(root,0,(W-uw)/2,wu(root,0));const rx=cards[0].x,cardsX=new Map([[root.id,rx]]);
+  if(sp[0]){card(sp[0],rx+SW,y0);lines.push(`M${rx+PR} ${y0}H${rx+SW-PR}`);cardsX.set(root.id,rx+SW/2)}
+  const dw=wd(root,0)*SW;if(pk.dn)placeDn(root,0,cardsX.get(root.id)-dw/2,wd(root,0),y0);
+  const title=pk.title||(LANG==='pl'?`Drzewo genealogiczne ${dopelniacz(root)}`:`Family tree of ${cardName(root).n}`),BH=Math.max(320,title.length*15+60);
+  const minX=Math.min(...cards.map(c=>c.x))-SW/2,maxX=Math.max(...cards.map(c=>c.x))+SW/2,PAD=260,WW=Math.max(1400,maxX-minX+2*PAD,2*BH+(pk.herb?640:420)),dx=WW/2-(minX+maxX)/2,HH=Math.max(...cards.map(c=>c.y))+250;
+  const img=p=>pk.photos&&photo(p);
+  const mot=(t,x)=>`<g transform="translate(${x},70)">${t.split('\n').map((l,i)=>`<rect x="-70" y="${i*34}" width="140" height="28" rx="4" fill="#efe0bd" stroke="#6b4a24" stroke-width="1.5"/><text x="0" y="${i*34+19}" text-anchor="middle" class="pm">${esc(l)}</text>`).join('')}</g>`;
+  const flour=(x,y,s)=>`<path transform="translate(${x},${y}) scale(${s})" d="M0 0c20-30 60-30 70 0s-30 40-50 20 0-30 15-15M0 0c-20-30-60-30-70 0s30 40 50 20 0-30-15-15" fill="none" stroke="#6b4a24" stroke-width="2"/>`;
+  return`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WW}" height="${HH}" viewBox="0 0 ${WW} ${HH}">
+  <defs><radialGradient id="pg" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#f6e9cc"/><stop offset=".7" stop-color="#e8d2a4"/><stop offset="1" stop-color="#c9a66b"/></radialGradient>
+   <filter id="nz"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" result="n"/><feColorMatrix in="n" values="0 0 0 0 .4  0 0 0 0 .3  0 0 0 0 .15  0 0 0 .18 0"/><feBlend in="SourceGraphic" mode="multiply"/></filter>
+   <clipPath id="cc"><circle r="${PR}"/></clipPath>
+   <style>.pt{font:700 44px 'Cinzel','Trajan Pro','Times New Roman',serif;fill:#3d2611;letter-spacing:2px}.pm{font:600 14px 'Cinzel',serif;fill:#3d2611;letter-spacing:2px}.pn{font:700 12.5px Georgia,serif;fill:#2b1a0b}.pd{font:italic 11px Georgia,serif;fill:#4a3420}.pb{font:italic 34px 'Great Vibes','Monotype Corsiva','Brush Script MT',cursive;fill:#3d2611}</style></defs>
+  <rect width="${WW}" height="${HH}" fill="url(#pg)" filter="url(#nz)"/>
+  <rect x="18" y="18" width="${WW-36}" height="${HH-36}" fill="none" stroke="#5a3a1a" stroke-width="4"/><rect x="30" y="30" width="${WW-60}" height="${HH-60}" fill="none" stroke="#5a3a1a" stroke-width="1.5"/>
+  ${[[60,60,1],[WW-60,60,-1]].map(([x,y,s])=>`<g transform="translate(${x},${y}) scale(${s},1)">${flour(0,0,.5)}</g>`).join('')}${[[60,HH-60,1],[WW-60,HH-60,-1]].map(([x,y,s])=>`<g transform="translate(${x},${y}) scale(${s},-1)">${flour(0,0,.5)}</g>`).join('')}
+  <g transform="translate(${WW/2},95)"><path d="M${-BH} -38H${BH}L${BH+40} 0 ${BH} 38H${-BH}L${-BH-40} 0Z" fill="#efe0bd" stroke="#5a3a1a" stroke-width="3"/><path d="M${-BH-40} 0l-50-30v60zM${BH+40} 0l50-30v60z" fill="#d8bf8e" stroke="#5a3a1a" stroke-width="2"/>
+   <text y="15" text-anchor="middle" class="pt" textLength="${Math.min(title.length*27,BH*2-40)}" lengthAdjust="spacingAndGlyphs">${esc(title.toUpperCase())}</text></g>
+  ${pk.herb?`<image href="${pk.herb}" x="70" y="40" width="130" height="150" preserveAspectRatio="xMidYMid meet"/><image href="${pk.herb}" x="${WW-200}" y="40" width="130" height="150" preserveAspectRatio="xMidYMid meet"/>`:''}
+  ${mot(pk.m1,pk.herb?280:150)}${mot(pk.m2,WW-(pk.herb?280:150))}
+  <g transform="translate(${dx},0)"><path d="${lines.join('')}" fill="none" stroke="#3d2611" stroke-width="1.6"/>
+  ${cards.map(({p,x,y})=>{const n=cardName(p).n,ws=n.split(' '),l1=ws.slice(0,Math.ceil(ws.length/2)).join(' '),l2=ws.slice(Math.ceil(ws.length/2)).join(' '),ph=img(p);
+    return`<g transform="translate(${x},${y})"><circle r="${PR+3}" fill="#3d2611"/>${ph?`<image href="${esc(ph)}" x="${-PR}" y="${-PR}" width="${PR*2}" height="${PR*2}" clip-path="url(#cc)" preserveAspectRatio="xMidYMid slice"/>`:`<circle r="${PR}" fill="#d9c49a"/><path d="M0 -14a8 8 0 1 1 0 .1M-15 18c2-14 28-14 30 0" fill="#3d2611" opacity=".75"/>`}
+     <rect x="${-CW/2}" y="${PR+6}" width="${CW}" height="42" rx="3" fill="#f3e6c6" stroke="#5a3a1a"/><text y="${PR+21}" text-anchor="middle" class="pn">${esc(l2?l1:n)}</text>${l2?`<text y="${PR+34}" text-anchor="middle" class="pn">${esc(l2)}</text>`:''}<text y="${PR+(l2?45:34)}" text-anchor="middle" class="pd">${esc(yrs(p))}</text></g>`}).join('')}</g>
+  <text x="${WW*.2}" y="${HH-70}" text-anchor="middle" class="pb">${esc(pk.b1)}</text><text x="${WW*.8}" y="${HH-70}" text-anchor="middle" class="pb">${esc(pk.b2)}</text>
+  ${flour(WW/2,HH-58,.7)}</svg>`}
+function renderPlakat(){const f=(k,l,t='text')=>`<label style="display:block;margin:6px 0"><small>${l}</small><br>${t==='area'?`<textarea data-pk="${k}" rows="3" style="width:100%">${esc(pk[k])}</textarea>`:`<input data-pk="${k}" value="${esc(pk[k])}" style="width:100%">`}</label>`;
+  $('#main').innerHTML=`<div style="display:flex;height:calc(100vh - 120px)"><div style="width:270px;flex:none;overflow:auto;padding:12px;border-right:1px solid var(--line)">
+   <h3 style="margin-top:0">Plakat drzewa</h3><p><small>Osoba w centrum: <b>${esc(name(byId[cur]))}</b> (zmień, wybierając inną osobę w drzewie).</small></p>
+   ${f('title','Tytuł (puste = „Drzewo genealogiczne …”)')}
+   <label>Pokolenia przodków <select data-pk="up">${[1,2,3,4,5].map(n=>`<option ${n==pk.up?'selected':''}>${n}</option>`).join('')}</select></label><br>
+   <label>Pokolenia potomków <select data-pk="dn">${[0,1,2,3,4].map(n=>`<option ${n==pk.dn?'selected':''}>${n}</option>`).join('')}</select></label><br>
+   <label><input type="checkbox" data-pk="photos" ${pk.photos?'checked':''}> zdjęcia osób</label>
+   ${f('m1','Sentencja po lewej (wiersze)','area')}${f('m2','Sentencja po prawej','area')}${f('b1','Podpis na dole po lewej')}${f('b2','Podpis na dole po prawej')}
+   <label style="display:block;margin:6px 0"><small>Herb / godło (obraz z dysku, opcjonalnie)</small><br><input type="file" id="pkherb" accept="image/*"></label>
+   <p><button class="pri" id="pkpng">⬇ Pobierz PNG (do druku)</button></p><p><button id="pksvg">⬇ Pobierz SVG</button></p>
+   <p><small>Duże drzewo = duży plakat. PNG ma 2× rozdzielczość podglądu. Zdjęcia z MyHeritage mogą nie przejść do PNG (blokada serwera zdjęć) – wtedy pojawi się sylwetka.</small></p></div>
+   <div id="pkview" style="flex:1;overflow:auto;background:#888;padding:16px">${plakatSVG()}</div></div>`;
+  const v=$('#pkview svg');v.style.width='100%';v.style.height='auto';
+  document.querySelectorAll('[data-pk]').forEach(e=>e.onchange=()=>{pk[e.dataset.pk]=e.type==='checkbox'?e.checked:e.tagName==='SELECT'?+e.value:e.value;renderPlakat()});
+  $('#pkherb').onchange=e=>{const r=new FileReader();r.onload=()=>{pk.herb=r.result;renderPlakat()};if(e.target.files[0])r.readAsDataURL(e.target.files[0])};
+  const fn=()=>(name(byId[cur])||'drzewo').replace(/[^\p{L}\d]+/gu,'_')+'_plakat';
+  const dl=(href,n)=>{const a=document.createElement('a');a.href=href;a.download=n;a.click()};
+  $('#pksvg').onclick=()=>dl(URL.createObjectURL(new Blob([plakatSVG()],{type:'image/svg+xml'})),fn()+'.svg');
+  $('#pkpng').onclick=async()=>{const b=$('#pkpng');b.textContent='Przygotowuję…';
+    // zdjęcia zdalne → data URL (inaczej canvas jest „skażony”); nieudane → sylwetka
+    let svg=plakatSVG();for(const u of [...new Set([...svg.matchAll(/href="(https?:[^"]+)"/g)].map(m=>m[1].replace(/&amp;/g,'&')))]){let d='';try{const bl=await (await fetch(u)).blob();d=await new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(bl)})}catch(e){}
+      svg=svg.split(`href="${esc(u)}"`).join(d?`href="${d}"`:'href=""')}
+    const im=new Image(),W=+svg.match(/width="(\d+(\.\d+)?)"/)[1],H=+svg.match(/height="(\d+(\.\d+)?)"/)[1];
+    im.onload=()=>{const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const x=c.getContext('2d');x.scale(2,2);x.drawImage(im,0,0);c.toBlob(bl=>{dl(URL.createObjectURL(bl),fn()+'.png');b.textContent='⬇ Pobierz PNG (do druku)'},'image/png')};
+    im.onerror=()=>{alert('Nie udało się utworzyć PNG – pobierz SVG.');b.textContent='⬇ Pobierz PNG (do druku)'};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}}
 
 function renderPeople(){
   const q=($('#pq')?.value||'').toLowerCase(),only=$('#onlym')?.checked;
