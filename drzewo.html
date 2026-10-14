@@ -98,7 +98,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
     <button id="mbtn" title="Więcej">☰</button>
   </div>
   <div id="menu">
-    <button class="pri" onclick="openFile()" style="width:100%">Otwórz plik .ged</button><input type="file" id="file" accept=".ged" hidden>
+    <button class="pri" onclick="openFile()" style="width:100%">Otwórz plik .ged</button><button onclick="if(confirm('Zacząć nowe, puste drzewo? Obecne drzewo zostaje w swoim pliku .ged – zapisz najpierw zmiany.')){roots=[];byId={};$('#menu').style.display='none';render()}" style="width:100%;margin-top:6px">Nowe drzewo…</button><input type="file" id="file" accept=".ged" hidden>
     <small>Zmiany zapisują się do tego samego pliku (Ctrl+S).</small>
     <label><b>Porównaj z innym drzewem</b><input type="file" id="cmp" accept=".ged"></label>
     <small id="cmpinfo"></small>
@@ -125,6 +125,11 @@ function parseTo(text){
   return {roots,byId};
 }
 function parse(text){({roots,byId}=parseTo(text))}
+// nowe drzewo bez pliku: minimalny GEDCOM (nagłówek, autor = pierwsza osoba, ta osoba), od razu zapis do wybranego pliku .ged
+function newTree({g,s,x,b,p}){const c=t=>String(t||'').replace(/[\r\n]+/g,' ').trim(),G=c(g),S=c(s);
+  const ged=['0 HEAD','1 GEDC','2 VERS 5.5.1','2 FORM LINEAGE-LINKED','1 CHAR UTF-8','1 SOUR DRZEWO_RODU','1 SUBM @U1@','0 @U1@ SUBM',`1 NAME ${G} ${S}`,
+    '0 @I1@ INDI',`1 NAME ${G} /${S}/`,`2 GIVN ${G}`,`2 SURN ${S}`,`1 SEX ${x==='F'?'F':'M'}`,...(c(b)||c(p)?['1 BIRT',...(c(b)?[`2 DATE ${c(b).toUpperCase()}`]:[]),...(c(p)?[`2 PLAC ${c(p)}`]:[])]:[]),'0 TRLR'].join('\n');
+  location.hash='@I1@';fileHandle=null;load(ged);setHandle(null);saveFile()} // Chrome/Edge: okno „Zapisz jako”, inne: pobranie pliku
 function ser(){ // linie >200 znaków (np. zdjęcia) dzielone na CONC – limit GEDCOM 255
   const out=[],ch=s=>s.match(/[\s\S]{1,200}/g)||[''];
   const w=n=>{const ls=n.val.split('\n'),c=n.lvl+1,f=ch(ls[0]);
@@ -227,7 +232,13 @@ function render(){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
   $('#stat').textContent=`${indis().length} osób, ${roots.filter(r=>r.tag==='FAM').length} rodzin`;
   if(!indis().length){$('#main').innerHTML=`<div class="empty-state"><h1>Twoje drzewo rodu</h1><p>Wczytaj plik .ged – np. eksport z MyHeritage (Drzewo → Zarządzaj drzewami → Eksportuj do GEDCOM).</p>
-    <button class="pri" onclick="openFile()">Otwórz plik .ged</button></div>`;return}
+    <button class="pri" onclick="openFile()">Otwórz plik .ged</button>
+    <h2 style="margin-top:34px">…albo zacznij nowe drzewo</h2><p>Wpisz siebie (lub osobę, od której zaczynasz) – potem dodasz rodziców, dzieci i małżonków przyciskami „+”.</p>
+    <form id="nt" style="display:grid;gap:8px;max-width:360px;margin:0 auto;text-align:left">
+     <input name="g" placeholder="Imię (imiona)" required><input name="s" placeholder="Nazwisko" required>
+     <select name="x"><option value="M">mężczyzna</option><option value="F">kobieta</option></select>
+     <input name="b" placeholder="Data urodzenia, np. 3 JUN 1976 lub 1976"><input name="p" placeholder="Miejsce urodzenia">
+     <button class="pri">Utwórz drzewo i zapisz plik .ged</button></form></div>`;$('#nt').onsubmit=e=>{e.preventDefault();newTree(Object.fromEntries(new FormData(e.target)))};return}
   if(!byId[cur])cur=indis()[0].id;
   history.replaceState(null,'','#'+cur);
   if(lmap&&view!=='mapa'){lmap.remove();lmap=null}({drzewo:()=>{pview=false;renderTree()},przodkowie:()=>{pview=true;if(zoomLvl<.5)zoomLvl=.8;renderTree()},profil:renderProfile,osoby:renderPeople,mapa:renderMap,notatki:renderNotes,siec:renderSiec,kontrola:renderKontrola,analizy:renderAnaliz})[view]();
