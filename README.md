@@ -22,3 +22,8 @@ Nie zamykaj czarnego okna, dopóki korzystasz z aplikacji. Najlepiej działa w *
 **Odczyt aktów przez Claude (opcjonalnie):** skopiuj `.env.example` jako `.env` i wpisz w nim swój klucz Anthropic API.
 
 Dla zaawansowanych: `python serwer.py [port]` (domyślnie 8770).
+
+## Wsparcie / Support
+Aplikacja jest darmowa. Jeśli Ci pomogła, możesz postawić autorowi kawę – przycisk jest też w menu ☰.
+
+☕ [buycoffee.to/sebastian.garstka](https://buycoffee.to/sebastian.garstka) (BLIK, przelew) · [ko-fi.com/sebastiangarstka](https://ko-fi.com/sebastiangarstka)

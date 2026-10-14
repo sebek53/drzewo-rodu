@@ -103,6 +103,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
     <label><b>Porównaj z innym drzewem</b><input type="file" id="cmp" accept=".ged"></label>
     <small id="cmpinfo"></small>
     <hr>
+    <a id="support" target="_blank" rel="noopener" style="display:block;text-align:center;margin:0 0 10px;padding:8px;border-radius:20px;background:#ffdd00;color:#000;font-weight:700;text-decoration:none">☕ Postaw kawę autorowi</a>
     <label><b>Język / Language</b><select id="langsel" onchange="setLang(this.value)"><option value="pl">Polski</option><option value="en">English</option></select></label>
     <label><b>Wygląd</b><select id="theme"><option value="light">Jasny</option><option value="dark">Ciemny</option><option value="auto">Jak w systemie</option></select></label>
     <hr><small id="stat"></small>
@@ -114,7 +115,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 // ======== język interfejsu (PL/EN): tłumaczenie napisów w DOM; dane z drzewa (imiona, miejsca, notatki) bez zmian ========
 // ponytail: słownik + reguły na gotowym DOM zamiast przepisywania szablonów; nowy napis w kodzie = dopisać go tutaj
 var LANG='pl';try{LANG=localStorage.getItem('lang')||(navigator.language.startsWith('pl')?'pl':'en')}catch(e){}
-const EN={'Brak skanów aktów':'No record scans','Dołącz zdjęcie aktu i odczytaj je w zakładce „Odczytaj akt”.':'Attach a photo of the record and read it in the “Read record” tab.','Imię i nazwisko':'Full name','z kim rodzina żyła na co dzień':'who the family lived with day to day','sąsiedzi, krewni lub kumowie':'neighbours, relatives or godparents','– często wskazówka do nieznanego pokrewieństwa.':'– often a clue to an unknown relationship.','Najczęściej występujący:':'Most frequent:','Pokazuje,':'Shows','Osoba':'Person','Drzewo':'Tree','Przodkowie':'Ancestors','Profil':'Profile','Osoby':'People','Mapa':'Map','Notatki':'Notes','Sieć':'Network','Sprzeczności':'Conflicts','Analizy':'Analyses',
+const EN={'☕ Postaw kawę autorowi':'☕ Buy the author a coffee','Brak skanów aktów':'No record scans','Dołącz zdjęcie aktu i odczytaj je w zakładce „Odczytaj akt”.':'Attach a photo of the record and read it in the “Read record” tab.','Imię i nazwisko':'Full name','z kim rodzina żyła na co dzień':'who the family lived with day to day','sąsiedzi, krewni lub kumowie':'neighbours, relatives or godparents','– często wskazówka do nieznanego pokrewieństwa.':'– often a clue to an unknown relationship.','Najczęściej występujący:':'Most frequent:','Pokazuje,':'Shows','Osoba':'Person','Drzewo':'Tree','Przodkowie':'Ancestors','Profil':'Profile','Osoby':'People','Mapa':'Map','Notatki':'Notes','Sieć':'Network','Sprzeczności':'Conflicts','Analizy':'Analyses',
 'Szukaj osoby…':'Search person…','🔍 Szukaj osoby…':'🔍 Search person…','↶ Cofnij':'↶ Undo','Zapisz .ged':'Save .ged','Otwórz plik .ged':'Open .ged file','Nowe drzewo…':'New tree…','Wygląd':'Appearance','Jasny':'Light','Ciemny':'Dark','Jak w systemie':'System',
 'Porównaj z innym drzewem':'Compare with another tree','Pobierz plik do importu w MyHeritage':'Download file for MyHeritage import','Język':'Language',
 'Twoje drzewo rodu':'Your family tree','…albo zacznij nowe drzewo':'…or start a new tree','Imię (imiona)':'Given name(s)','Nazwisko':'Surname','mężczyzna':'male','kobieta':'female','Miejsce urodzenia':'Place of birth',
@@ -178,7 +179,7 @@ new MutationObserver(ms=>{if(LANG==='pl')return;for(const m of ms)m.addedNodes.f
 const EN_MSG={'Zacząć nowe, puste drzewo? Obecne drzewo zostaje w swoim pliku .ged – zapisz najpierw zmiany.':'Start a new, empty tree? The current tree stays in its .ged file – save your changes first.',
  'Brak urodzeń z miejscem na mapie dla tego nazwiska.':'No births with a mapped place for this surname.','Ta przeglądarka nie pozwala zapisywać do folderu – użyj Chrome lub Edge.':'This browser cannot save to a folder – use Chrome or Edge.'};
 function setLang(l){LANG=l;try{localStorage.setItem('lang',l)}catch(e){}document.documentElement.lang=l;location.reload()}
-document.documentElement.lang=LANG;document.addEventListener('DOMContentLoaded',()=>{const ls=document.getElementById('langsel');if(ls)ls.value=LANG;trNode(document.body)});
+document.documentElement.lang=LANG;document.addEventListener('DOMContentLoaded',()=>{const ls=document.getElementById('langsel');if(ls)ls.value=LANG;const su=document.getElementById('support');if(su)su.href=LANG==='pl'?'https://buycoffee.to/sebastian.garstka':'https://ko-fi.com/sebastiangarstka'; /* wsparcie: BLIK dla PL, Ko-fi dla reszty świata */trNode(document.body)});
 
 // ======== GEDCOM: węzły {lvl,id,tag,val,kids}, zapis 1:1 z powrotem ========
 let topView=false,keepView=null,lastTap={},roots=[],byId={},cur=null,sel=null,view='drzewo',ptab='szczegoly',gens=3,dgens=1,zoomLvl=1,all=false;
