@@ -1,5 +1,7 @@
 # Drzewo rodu
 
+🇬🇧 *Family tree app for GEDCOM files (e.g. MyHeritage export). English interface: ☰ menu → Język / Language → English. Start: download ZIP, double-click `Uruchom.bat` (Windows) or `Uruchom.command` (macOS/Linux).*
+
 Przeglądarkowa aplikacja do prowadzenia drzewa genealogicznego z pliku GEDCOM (.ged, np. eksport z MyHeritage).
 
 **Funkcje:** drzewo z rozwijaniem gałęzi w miejscu, profil osoby, edycja, zdjęcia, notatki badawcze, mapa z animacją migracji, detektyw sprzeczności dat, sieć powiązań, życie na tle historii, „gdzie szukać dalej”, wyszukiwanie w serwisach genealogicznych, odczyt aktów przez Claude.
