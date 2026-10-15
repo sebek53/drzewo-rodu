@@ -1053,8 +1053,8 @@ function plakatSVG(){const root=byId[cur],SW=150,RH=150,CW=132,PR=26,top=230;let
   const wu=(p,g)=>g>=pk.up||!par(p).length?1:par(p).reduce((a,x)=>a+wu(x,g+1),0);
   const kidsOf=p=>marrOrd(p).flatMap(f=>kids(f,'CHIL').map(c=>byId[c.val]).filter(Boolean));
   const wd=(p,g)=>g>=pk.dn||!kidsOf(p).length?1:kidsOf(p).reduce((a,x)=>a+wd(x,g+1),0);
-  const sp=marrOrd(root).map(f=>spouseIn(f,root.id)).filter(Boolean).slice(0,1);
-  const W=Math.max(wu(root,0),wd(root,0),1+sp.length)*SW,cards=[],y0=top+pk.up*RH;
+  const sp=marrOrd(root).map(f=>spouseIn(f,root.id)).filter(Boolean).slice(0,2);
+  const W=Math.max(wu(root,0),wd(root,0),1+2*sp.length)*SW,cards=[],y0=top+pk.up*RH;
   const card=(p,x,y)=>cards.push({p,x,y});
   const placeUp=(p,g,x0,w)=>{const x=x0+w*SW/2,y=y0-g*RH;card(p,x,y);if(g>=pk.up)return x;const ps=par(p);if(!ps.length)return x;
     let xx=x0;const cx=ps.map(q=>{const ww=wu(q,g+1),c=placeUp(q,g+1,xx,ww);xx+=ww*SW;return c});
@@ -1062,8 +1062,12 @@ function plakatSVG(){const root=byId[cur],SW=150,RH=150,CW=132,PR=26,top=230;let
   const placeDn=(p,g,x0,w,y)=>{const ks=kidsOf(p);if(g>=pk.dn||!ks.length)return;let xx=x0;const cx=ks.map(k=>{const ww=wd(k,g+1),c=xx+ww*SW/2;card(k,c,y+RH);placeDn(k,g+1,xx,ww,y+RH);xx+=ww*SW;return c});
     const yb=y+RH/2+18;lines.push(`M${(cardsX.get(p.id)??x0+w*SW/2)} ${y+48}V${yb}`,`M${Math.min(...cx)} ${yb}H${Math.max(...cx)}`,...cx.map(c=>`M${c} ${yb}V${y+RH-PR}`))};
   const uw=wu(root,0)*SW;placeUp(root,0,(W-uw)/2,wu(root,0));const rx=cards[0].x,cardsX=new Map([[root.id,rx]]);
-  if(sp[0]){card(sp[0],rx+SW,y0);lines.push(`M${rx+PR} ${y0}H${rx+SW-PR}`);cardsX.set(root.id,rx+SW/2)}
-  const dw=wd(root,0)*SW;if(pk.dn)placeDn(root,0,cardsX.get(root.id)-dw/2,wd(root,0),y0);
+  // każde małżeństwo osobno: 1. współmałżonek po prawej, 2. po lewej; dzieci pod linią swoich rodziców
+  const grp=marrOrd(root).slice(0,2).map((f,i)=>{const s=spouseIn(f,root.id),sx=rx+(i?-SW:SW);if(s){card(s,sx,y0);lines.push(`M${Math.min(rx,sx)+PR} ${y0}H${Math.max(rx,sx)-PR}`)}
+    return{mid:s?(rx+sx)/2:rx,ks:kids(f,'CHIL').map(c=>byId[c.val]).filter(Boolean),i}});
+  if(pk.dn){const ord=[...grp].reverse(),tw=ord.reduce((a,g)=>a+g.ks.reduce((b,k)=>b+wd(k,1),0),0)*SW;let xx=rx-tw/2;
+    ord.forEach(g=>{if(!g.ks.length)return;const cx=g.ks.map(k=>{const ww=wd(k,1),c=xx+ww*SW/2;card(k,c,y0+RH);placeDn(k,1,xx,ww,y0+RH);xx+=ww*SW;return c}),yb=y0+RH/2+18+g.i*10;
+      lines.push(`M${g.mid} ${y0}V${yb}`,`M${Math.min(...cx,g.mid)} ${yb}H${Math.max(...cx,g.mid)}`,...cx.map(c=>`M${c} ${yb}V${y0+RH-PR}`))})}
   const title=pk.title||(LANG==='pl'?`Drzewo genealogiczne ${dopelniacz(root)}`:`Family tree of ${cardName(root).n}`),BH=Math.max(320,title.length*15+60);
   const minX=Math.min(...cards.map(c=>c.x))-SW/2,maxX=Math.max(...cards.map(c=>c.x))+SW/2,PAD=260,WW=Math.max(1400,maxX-minX+2*PAD,2*BH+(pk.herb?640:420)),dx=WW/2-(minX+maxX)/2,HH=Math.max(...cards.map(c=>c.y))+250;
   const img=p=>pk.photos&&kids(p,'OBJE').filter(o=>!/akt|skan|scan|metryk|dokument/i.test(sub(o,'TITL')?.val||'')).map(o=>sub(o,'FILE')?.val).find(Boolean); // tylko zdjęcia, bez skanów aktów
