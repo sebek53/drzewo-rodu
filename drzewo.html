@@ -144,7 +144,7 @@ const EN={'brak':'none','Plakat':'Poster','Plakat drzewa':'Family tree poster','
 '+ Nowa notatka':'+ New note','Brak notatek.':'No notes.','Dodaj pierwszą notatkę.':'Add the first note.','Kopiuj':'Copy','Edycja':'Edit',
 'Sieć społeczna rodu – kumowie, świadkowie, zgłaszający':'Family social network – godparents, witnesses, informants','chrzestny':'godparent','świadek':'witness','zgłaszający zgon/urodzenie':'informant (death/birth)','rodzina (zięć, brat…)':'family (son-in-law, brother…)',
 'Detektyw sprzeczności':'Conflict detective','Brak wykrytych sprzeczności.':'No conflicts found.','Sprawdź daty – zbyt młody wiek lub zdarzenie przed narodzinami':'Check dates – too young or event before birth',
-'Oś czasu rodu':'Family timeline','Kto żył w tej wsi':'Who lived in this village','Listy do archiwów':'Letters to archives','Statystyki':'Statistics','Brakujące ogniwa':'Missing links','DNA wg gałęzi':'DNA by branch',
+'Oś czasu rodu':'Family timeline','Koło przodków w czasie':'Ancestor time wheel','po mieczu (ojciec)':'paternal (father)','po kądzieli (matka)':'maternal (mother)','Kto żył w tej wsi':'Who lived in this village','Listy do archiwów':'Letters to archives','Statystyki':'Statistics','Brakujące ogniwa':'Missing links','DNA wg gałęzi':'DNA by branch',
 'całe drzewo':'whole tree','Zgony w latach epidemii':'Deaths in epidemic years','Brak zgonów w znanych latach epidemii.':'No deaths in known epidemic years.','Miejscowość:':'Place:','od roku':'from year','do':'to','Podświetleni':'Highlighted','Osoby':'People',
 'Pobieram historię miejscowości z Wikipedii…':'Fetching place history from Wikipedia…','Hasło nie ma opisu historii.':'The article has no history section.',
 'Osoba:':'Person:','Adresat:':'Recipient:','USC – odpis aktu':'Civil registry – record copy','Archiwum Państwowe':'State Archives','Archiwum diecezjalne / parafia':'Diocesan archive / parish','IPN – akta osoby':'IPN – personal files','💾 Zapisz do folderu drzewa':'💾 Save to tree folder','📂 Otwórz zapisany list':'📂 Open saved letter','Uzupełnij pola w […] i ………':'Fill in the […] and ……… fields','Brak zapisanych listów.':'No saved letters.',
@@ -910,11 +910,29 @@ var atab='os',aSel={};
 const EPID=[[1831,1831,'cholera'],[1847,1848,'głód i tyfus'],[1848,1849,'cholera'],[1852,1855,'cholera'],[1866,1867,'cholera'],[1873,1873,'cholera'],[1892,1894,'cholera'],[1915,1915,'tyfus wojenny'],[1918,1920,'grypa hiszpanka']];
 if(LANG==='en')EPID.forEach(e=>e[2]={'cholera':'cholera','głód i tyfus':'famine and typhus','tyfus wojenny':'war typhus','grypa hiszpanka':'Spanish flu'}[e[2]]||e[2]);
 const lnk=p=>`<a href="#" onclick="go('${p.id}','profil');return false">${esc(name(p))}</a>`;
-function renderAnaliz(){const T={os:'Oś czasu rodu',wies:'Kto żył w tej wsi',listy:'Listy do archiwów',stat:'Statystyki',braki:'Brakujące ogniwa',dna:'DNA wg gałęzi'};
-  const body=({os:aOs,wies:aWies,listy:aListy,stat:aStat,braki:aBraki,dna:aDna})[atab]();
+function renderAnaliz(){const T={os:'Oś czasu rodu',wies:'Kto żył w tej wsi',listy:'Listy do archiwów',stat:'Statystyki',braki:'Brakujące ogniwa',dna:'DNA wg gałęzi',kolo:'Koło przodków w czasie'};
+  const body=({os:aOs,wies:aWies,listy:aListy,stat:aStat,braki:aBraki,dna:aDna,kolo:aKolo})[atab]();
   $('#main').innerHTML=`<div style="padding:16px;max-width:1150px"><div class="ptabs" style="margin:0 0 14px;padding:0">${Object.entries(T).map(([k,l])=>`<span class="${k===atab?'on':''}" onclick="atab='${k}';render()">${l}</span>`).join('')}</div>${body}</div>`;
   document.querySelectorAll('#main [data-a]').forEach(e=>e.onchange=()=>{aSel[e.dataset.a]=e.value;render()})}
 const selS=(k,opts,v)=>`<select data-a="${k}">${opts.map(([a,b])=>`<option value="${esc(a)}" ${String(a)===String(v)?'selected':''}>${esc(b)}</option>`).join('')}</select>`;
+
+// 7. koło przodków w czasie: klin = osoba, kąt = miejsce w drzewie (lewa połowa ojciec, prawa matka), promień = lata życia (środek = najnowszy rok), kolor = pokolenie
+function aKolo(){const root=byId[cur]||indis()[0];if(!root)return'<p>Brak osób.</p>';const G=+(aSel.kg||7),now=new Date().getFullYear();
+  const par=p=>{const f=p&&famsOf(p,'FAMC')[0];return f?[byId[kid(f,'HUSB')?.val],byId[kid(f,'WIFE')?.val]]:[]};
+  const W=[],walk=(p,n,g,kidB)=>{if(!p||g>=G)return;let b=by_(p),d=dy_(p),est=!b||!d;b=b||(kidB?kidB-30:null);if(!b)return;d=d||Math.min(now,b+60);
+    W.push({p,n,g,b,d,est});const[fa,mo]=par(p);walk(fa,2*n,g+1,b);walk(mo,2*n+1,g+1,b)};
+  walk(root,1,0,null);if(!W.length)return'<p>Wybrana osoba nie ma daty urodzenia.</p>';
+  const top=Math.max(...W.map(w=>w.d)),old=Math.min(...W.map(w=>w.b)),R=380,k=R/Math.max(1,top-old),C=R+40,rr=y=>(top-y)*k;
+  const pt=(r,a)=>[C+r*Math.sin(a*Math.PI/180),C-r*Math.cos(a*Math.PI/180)].map(v=>v.toFixed(1)).join(' ');
+  const COL=['#868e96','#4dabf7','#69db7c','#ffd43b','#ff922b','#f06595','#9775fa','#20c997','#a9e34b','#e599f7'];
+  const ring=[];for(let y=Math.ceil(old/50)*50;y<=top;y+=50){const r=rr(y);ring.push(`<circle cx="${C}" cy="${C}" r="${r}" fill="none" stroke="#ced4da" stroke-dasharray="3 4"/><text x="${C+3}" y="${C-r-3}" font-size="11" fill="#868e96">${y}</text>`)}
+  const sl=W.map(w=>{const s=1<<w.g,f=(w.n-s)/s,a1=180+f*360,a2=a1+360/s,r1=rr(w.d),r2=rr(w.b),L=a2-a1>180?1:0;
+    const d=w.g?`M${pt(r1,a1)}A${r1} ${r1} 0 ${L} 1 ${pt(r1,a2)}L${pt(r2,a2)}A${r2} ${r2} 0 ${L} 0 ${pt(r2,a1)}Z`:`M${C} ${C-r2}a${r2} ${r2} 0 1 0 .1 0ZM${C} ${C-r1}a${r1} ${r1} 0 1 1 -.1 0Z`;
+    return`<path d="${d}" fill="${COL[w.g%COL.length]}" fill-opacity="${w.est?.4:.85}" stroke="#fff" stroke-width=".7" fill-rule="evenodd" style="cursor:pointer" onclick="go('${w.p.id}','profil')"><title>${esc(name(w.p))} (${esc(life(w.p))})${w.est?' – daty szacunkowe':''}</title></path>`});
+  const ax=`<path d="M${C} ${C-R-20}V${C+R+20}" stroke="#adb5bd"/><text x="${C-R}" y="${C-R}" font-size="13" fill="#495057">po mieczu (ojciec)</text><text x="${C+R}" y="${C-R}" text-anchor="end" font-size="13" fill="#495057">po kądzieli (matka)</text>`;
+  return`<p>Osoba: <b>${esc(name(root))}</b> <small>(zmień, wybierając osobę w drzewie)</small> · Pokolenia: ${selS('kg',[3,4,5,6,7,8,9,10].map(x=>[x,x]),G)}</p>
+  <svg viewBox="0 0 ${2*C} ${2*C}" style="width:100%;max-width:${2*C}px;font-family:sans-serif">${ring.join('')}${sl.join('')}${ax}</svg>
+  <p><small>Każdy klin to jedna osoba: zaczyna się na roku urodzenia (dalej od środka), kończy na roku zgonu. Kolor = pokolenie. Lewa połowa to przodkowie ojca, prawa matki; dolne ćwiartki to linia męska ojca i żeńska matki. Blade kliny mają daty szacunkowe (brak urodzenia: 30 lat przed dzieckiem, brak zgonu: 60 lat życia). Kliknij klin, aby otworzyć osobę.</small></p>`}
 
 // 1. oś czasu rodu: urodzenia/zgony na dekady + zdarzenia historyczne + zgony w latach epidemii
 function aOs(){const sl=surnameList(),k=aSel.osk??'';const ps=indis().filter(p=>!k||srnKeyOf(p)===k);const dec={};
