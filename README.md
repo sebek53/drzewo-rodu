@@ -2,7 +2,7 @@
 
 ## 👉 [Otwórz aplikację](https://sebek53.github.io/drzewo-rodu/) · [Open the app](https://sebek53.github.io/drzewo-rodu/)
 
-**Dwa sposoby, wybierz dowolny.** Sposób 1 (najprostszy): kliknij link powyżej, nic nie trzeba instalować. Otwórz swój plik .ged, otwórz swój plik .ged albo zacznij nowe drzewo. Dane zostają na Twoim komputerze, nic nie trafia na serwer. Sposób 2: [wersja na Twoim dysku](#sposób-2-wersja-na-twoim-dysku), jeśli wolisz mieć aplikację u siebie. *Two ways: open the link above (no install), or download the ZIP and run it from your disk. No install needed: click the link, open your .ged file or start a new tree. Your data stays on your computer.*
+**Dwa sposoby, wybierz dowolny.** Sposób 1 (najprostszy): kliknij link powyżej, nic nie trzeba instalować. Otwórz swój plik .ged albo zacznij nowe drzewo. Dane zostają na Twoim komputerze, nic nie trafia na serwer. Sposób 2: [wersja na Twoim dysku](#sposób-2-wersja-na-twoim-dysku), jeśli wolisz mieć aplikację u siebie. *Two ways: open the link above (no install), or download the ZIP and run it from your disk. Your data stays on your computer.*
 
 ![Drzewo rodu – darmowa aplikacja do drzewa genealogicznego](docs/promo-pl.svg)
 
