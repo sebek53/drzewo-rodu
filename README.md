@@ -1,5 +1,9 @@
 # Drzewo rodu
 
+## 👉 [Otwórz aplikację](https://sebek53.github.io/drzewo-rodu/) · [Open the app](https://sebek53.github.io/drzewo-rodu/)
+
+Nic nie trzeba instalować: kliknij link, otwórz swój plik .ged albo zacznij nowe drzewo. Dane zostają na Twoim komputerze, nic nie trafia na serwer. *No install needed: click the link, open your .ged file or start a new tree. Your data stays on your computer.*
+
 ![Drzewo rodu – darmowa aplikacja do drzewa genealogicznego](docs/promo-pl.svg)
 
 🇬🇧 
@@ -9,7 +13,7 @@
 ![Get started](docs/start-en.svg)
 ![Privacy](docs/prywatnosc-en.svg)
 
-*Family tree app for GEDCOM files (e.g. MyHeritage export). English interface: ☰ menu → Język / Language → English. Start: download ZIP, double-click `Uruchom.bat` (Windows) or `Uruchom.command` (macOS/Linux).*
+*Family tree app for GEDCOM files (e.g. MyHeritage export). English interface: ☰ menu → Język / Language → English. Start: open https://sebek53.github.io/drzewo-rodu/ (or download ZIP and double-click `Uruchom.bat` (Windows) or `Uruchom.command` (macOS/Linux)).*
 
 Przeglądarkowa aplikacja do prowadzenia drzewa genealogicznego z pliku GEDCOM (.ged, np. eksport z MyHeritage).
 
@@ -19,7 +23,7 @@ Przeglądarkowa aplikacja do prowadzenia drzewa genealogicznego z pliku GEDCOM (
 ![Jak zacząć](docs/start-pl.svg)
 ![Prywatność](docs/prywatnosc-pl.svg)
 
-## Uruchomienie – jedno kliknięcie
+## Wersja na dysk (dla chętnych)
 1. Pobierz projekt (zielony przycisk **Code → Download ZIP**) i rozpakuj.
 2. **Windows:** kliknij dwukrotnie **`Uruchom.bat`**.
    **macOS / Linux:** kliknij dwukrotnie **`Uruchom.command`** (za pierwszym razem: prawy klik → Otwórz).
