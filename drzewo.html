@@ -848,12 +848,26 @@ function whereTab(p){const b=by_(p),d=dy_(p),pl=((sub(p,'BIRT.PLAC')?.val||'')+'
   if(!kids(p,'OBJE').length)L.push(['Brak skanów aktów','Dołącz zdjęcie aktu i odczytaj je w zakładce „Odczytaj akt”.']);
   return L.map(([h,t])=>`<div class="fact" style="grid-template-columns:190px 1fr"><b>${esc(h)}</b><div>${esc(t)}</div></div>`).join('')||'<small>Brak wskazówek.</small>'}
 // Odczyt aktu przez Claude (przez serwer.py – klucz w .env)
-function aktTab(p){return`<p class="mut">Wybierz zdjęcie aktu (łacina, polski, rosyjski). Claude odczyta tekst, przetłumaczy go i zaproponuje dane. Działa przy uruchomieniu przez <code>python serwer.py</code> z kluczem w <code>.env</code>.</p>
+function aktTab(p){return`<p class="mut">Wybierz zdjęcie aktu (łacina, polski, rosyjski). Claude odczyta tekst, przetłumaczy go i zaproponuje dane. Potrzebny własny klucz Claude (menu ☰ → Klucz Claude).</p>
   <input type="file" accept="image/*" onchange="aktRead('${p.id}',this.files[0])"><div id="aktout" style="margin-top:12px"></div>`}
+// bez serwera: prosto z przeglądarki do API Anthropic, kluczem użytkownika
+const AKT_PROMPT=`To jest skan polskiego aktu metrykalnego (XVIII–XX w., łacina, polski lub rosyjski, pismo odręczne).
+Odczytaj go i zwróć WYŁĄCZNIE obiekt JSON (bez komentarzy) o polach:
+{"transkrypcja": "tekst aktu w oryginalnym języku", "tlumaczenie": "przekład na polski",
+ "typ": "chrzest|slub|zgon|inny", "numer": "", "data": "dzień miesiąc rok np. 9 MAY 1784 (format GEDCOM, angielskie skróty miesięcy)", "miejscowosc": "",
+ "osoba": {"imie": "", "nazwisko": "", "wiek": ""},
+ "rodzice": {"ojciec": "", "matka": ""}, "malzonek": "", "chrzestni_swiadkowie": [""],
+ "uwagi": "niepewne odczyty oznacz (?)"}
+Puste pola zostaw jako "". Nie zgaduj – lepiej puste niż zmyślone.`;
+async function aktDirect(img){const[,mt,b64]=img.match(/^data:([^;]+);base64,(.*)$/s);
+  const r=await (await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':apiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-opus-5-5',max_tokens:16000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:AKT_PROMPT}]}]})})).json();
+  if(r.error)return{blad:/auth/.test(r.error.type)?'Nieprawidłowy klucz API – sprawdź go w menu ☰ → Klucz Claude.':/credit/.test(r.error.message)?'Brak środków na koncie Anthropic – doładuj je na console.anthropic.com.':r.error.message};
+  const t=(r.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(''),m=t.match(/\{[\s\S]*\}/);try{return m?JSON.parse(m[0]):{transkrypcja:t}}catch(e){return{transkrypcja:t}}}
 async function aktRead(id,f){if(!f)return;const o=$('#aktout');o.innerHTML='Odczytuję akt… (do minuty)';
   const b=await createImageBitmap(f),s=Math.min(1,2000/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext('2d').drawImage(b,0,0,c.width,c.height);
   const img=c.toDataURL('image/jpeg',.85);let r;
-  try{r=await (await fetch('/api/odczyt',{method:'POST',headers:{'Content-Type':'application/json',...(apiKey()?{'X-Api-Key':apiKey()}:{})},body:JSON.stringify({image:img})})).json()}catch(e){r={blad:'Brak serwera – uruchom: python serwer.py'}}
+  try{r=apiKey()?await aktDirect(img):await (await fetch('/api/odczyt',{method:'POST',headers:{'Content-Type':'application/json',...(apiKey()?{'X-Api-Key':apiKey()}:{})},body:JSON.stringify({image:img})})).json()}catch(e){r={blad:apiKey()?'Błąd połączenia z Claude: '+e.message:'Wpisz klucz Claude w menu ☰ → Klucz Claude'}}
   if(r.blad){o.innerHTML=`<p style="color:#c33">${esc(r.blad)}</p>`;return}window._akt={id,r,img};
   const kv=(l,v)=>v?`<div class="fact"><b>${l}</b><div>${esc(v)}</div></div>`:'';
   o.innerHTML=`${kv('Typ',r.typ)}${kv('Nr',r.numer)}${kv('Data',r.data)}${kv('Miejsce',r.miejscowosc)}${kv('Osoba',[r.osoba?.imie,r.osoba?.nazwisko,r.osoba?.wiek&&'('+r.osoba.wiek+')'].filter(Boolean).join(' '))}

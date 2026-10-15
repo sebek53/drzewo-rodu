@@ -1,6 +1,6 @@
 @echo off
 rem Drzewo rodu – uruchomienie jednym kliknieciem (Windows).
-rem Sprawdza Pythona (gdy brak – instaluje przez winget), doinstalowuje biblioteke do odczytu aktow, startuje serwer i otwiera przegladarke.
+rem Gdy jest Python: doinstalowuje biblioteke do odczytu aktow, startuje serwer. Gdy brak Pythona: otwiera drzewo.html wprost.
 chcp 65001 >nul
 cd /d "%~dp0"
 title Drzewo rodu
@@ -10,18 +10,10 @@ where py >nul 2>nul && py -3 -c "import sys" >nul 2>nul && set "PY=py -3"
 if not defined PY python -c "import sys" >nul 2>nul && set "PY=python"
 if not defined PY if exist "%LocalAppData%\Programs\Python\Python312\python.exe" set "PY=%LocalAppData%\Programs\Python\Python312\python.exe"
 
+rem bez Pythona aplikacja tez dziala - otwieramy ja wprost w przegladarce
 if not defined PY (
-  echo Nie znaleziono Pythona - instaluje go automatycznie, to potrwa chwile...
-  winget install -e --id Python.Python.3.12 --scope user --silent --accept-package-agreements --accept-source-agreements
-  if exist "%LocalAppData%\Programs\Python\Python312\python.exe" set "PY=%LocalAppData%\Programs\Python\Python312\python.exe"
-)
-if not defined PY (
-  echo.
-  echo Nie udalo sie zainstalowac Pythona automatycznie.
-  echo Zainstaluj go ze strony, ktora sie otworzy ^(zaznacz "Add python.exe to PATH"^), potem uruchom ten plik ponownie.
-  start "" https://www.python.org/downloads/
-  pause
-  exit /b 1
+  start "" "%~dp0drzewo.html"
+  exit /b 0
 )
 
 rem biblioteka do „Odczytaj akt” (Claude) – opcjonalna, reszta aplikacji dziala bez niej

@@ -26,7 +26,7 @@ Przeglądarkowa aplikacja do prowadzenia drzewa genealogicznego z pliku GEDCOM (
 3. Aplikacja sama otworzy się w przeglądarce. Wczytaj swój plik .ged (☰ → Otwórz plik).
 
 Plik startowy sam sprawdza, czego brakuje:
-- gdy nie ma Pythona – na Windows instaluje go automatycznie (winget), na macOS otwiera stronę pobierania,
+- Python nie jest potrzebny: bez niego Uruchom.bat otwiera drzewo.html wprost w przeglądarce (możesz też po prostu kliknąć dwa razy drzewo.html). Odczyt aktów działa wtedy z kluczem Claude wpisanym w menu ☰,
 - doinstalowuje bibliotekę do odczytu aktów,
 - uruchamia serwer i otwiera przeglądarkę (ponowne kliknięcie tylko otwiera przeglądarkę).
 
