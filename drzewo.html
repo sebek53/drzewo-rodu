@@ -64,7 +64,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 .phead .av{width:130px;height:130px;border-width:3px}
 .phead h1{margin:0 0 6px;font-size:30px}
 .ptabs{display:flex;gap:22px;padding:0 32px;margin-top:-34px;border-radius:24px 24px 0 0;background:var(--bg);padding-top:14px;border-bottom:1px solid var(--line)}
-.ptabs span{padding:10px 2px;cursor:pointer;border-bottom:3px solid transparent}.ptabs span.on{border-bottom-color:var(--ink);font-weight:700}
+.ptabs span{padding:10px 2px;white-space:nowrap;cursor:pointer;border-bottom:3px solid transparent}.ptabs span.on{border-bottom-color:var(--ink);font-weight:700}
 .pbody{padding:24px 32px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:start}
 .box{border:1px solid var(--line);border-radius:24px;padding:20px 24px;background:var(--card)}
 .box h2{margin:0 0 12px;font-size:18px}
@@ -912,7 +912,7 @@ if(LANG==='en')EPID.forEach(e=>e[2]={'cholera':'cholera','głód i tyfus':'famin
 const lnk=p=>`<a href="#" onclick="go('${p.id}','profil');return false">${esc(name(p))}</a>`;
 function renderAnaliz(){const T={os:'Oś czasu rodu',wies:'Kto żył w tej wsi',listy:'Listy do archiwów',stat:'Statystyki',braki:'Brakujące ogniwa',dna:'DNA wg gałęzi',kolo:'Koło przodków w czasie'};
   const body=({os:aOs,wies:aWies,listy:aListy,stat:aStat,braki:aBraki,dna:aDna,kolo:aKolo})[atab]();
-  $('#main').innerHTML=`<div style="padding:16px;max-width:1150px;margin:0 auto"><div class="ptabs" style="margin:0 0 14px;padding:0">${Object.entries(T).map(([k,l])=>`<span class="${k===atab?'on':''}" onclick="atab='${k}';render()">${l}</span>`).join('')}</div>${body}</div>`;
+  $('#main').innerHTML=`<div style="padding:16px;max-width:1150px;margin:0 auto"><div class="ptabs" style="margin:0 0 14px;padding:0;flex-wrap:wrap;gap:0 18px">${Object.entries(T).map(([k,l])=>`<span class="${k===atab?'on':''}" onclick="atab='${k}';render()">${l}</span>`).join('')}</div>${body}</div>`;
   document.querySelectorAll('#main [data-a]').forEach(e=>e.onchange=()=>{aSel[e.dataset.a]=e.value;render()})}
 const selS=(k,opts,v)=>`<select data-a="${k}">${opts.map(([a,b])=>`<option value="${esc(a)}" ${String(a)===String(v)?'selected':''}>${esc(b)}</option>`).join('')}</select>`;
 
