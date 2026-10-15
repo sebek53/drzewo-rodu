@@ -1112,7 +1112,11 @@ function renderPlakat(){const f=(k,l,t='text')=>`<label style="display:block;mar
    <p><button class="pri" id="pkpng">⬇ Pobierz PNG (do druku)</button></p><p><button id="pksvg">⬇ Pobierz SVG</button></p>
    <p><small>Duże drzewo = duży plakat. PNG ma 2× rozdzielczość podglądu. Zdjęcia z MyHeritage mogą nie przejść do PNG (blokada serwera zdjęć) – wtedy pojawi się sylwetka.</small></p></div>
    <div style="flex:1 1 300px;display:flex;flex-direction:column;min-width:0"><div style="padding:6px 16px;background:#777;display:flex;gap:6px;align-items:center"><button onclick="pz=Math.max(.25,pz/1.25);pzA()">−</button><button onclick="pz=1;pzA()">Dopasuj</button><button onclick="pz=Math.min(8,pz*1.25);pzA()">+</button><small id="pzl" style="color:#fff"></small></div><div id="pkview" style="flex:1;overflow:auto;background:#888;padding:16px">${plakatSVG()}</div></div></div>`;
-  pzA();$('#pkview').onwheel=e=>{if(!e.ctrlKey)return;e.preventDefault();pz=Math.min(8,Math.max(.25,pz*(e.deltaY<0?1.15:1/1.15)));pzA()};
+  pzA();{const pv=$('#pkview');pv.style.cursor='grab';let d=null; // przesuwanie przybliżonego plakatu myszką
+    pv.onpointerdown=e=>{if(e.button)return;d={x:e.clientX,y:e.clientY,l:pv.scrollLeft,t:pv.scrollTop};pv.setPointerCapture(e.pointerId);pv.style.cursor='grabbing'};
+    pv.onpointermove=e=>{if(d){pv.scrollLeft=d.l-(e.clientX-d.x);pv.scrollTop=d.t-(e.clientY-d.y)}};
+    pv.onpointerup=pv.onpointercancel=()=>{d=null;pv.style.cursor='grab'}}
+  $('#pkview').onwheel=e=>{if(!e.ctrlKey)return;e.preventDefault();pz=Math.min(8,Math.max(.25,pz*(e.deltaY<0?1.15:1/1.15)));pzA()};
   document.querySelectorAll('[data-pk]').forEach(e=>e.onchange=()=>{pk[e.dataset.pk]=e.type==='checkbox'?e.checked:e.tagName==='SELECT'&&/^\d+$/.test(e.value)?+e.value:e.value;renderPlakat()});
   $('#pkherb').onchange=e=>{const r=new FileReader();r.onload=()=>{pk.herb=r.result;renderPlakat()};if(e.target.files[0])r.readAsDataURL(e.target.files[0])};
   const fn=()=>(name(byId[cur])||'drzewo').replace(/[^\p{L}\d]+/gu,'_')+'_plakat';
