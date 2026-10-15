@@ -118,7 +118,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0}
 // ======== język interfejsu (PL/EN): tłumaczenie napisów w DOM; dane z drzewa (imiona, miejsca, notatki) bez zmian ========
 // ponytail: słownik + reguły na gotowym DOM zamiast przepisywania szablonów; nowy napis w kodzie = dopisać go tutaj
 var LANG='pl';try{LANG=localStorage.getItem('lang')||(navigator.language.startsWith('pl')?'pl':'en')}catch(e){}
-const EN={'brak':'none','Plakat':'Poster','Plakat drzewa':'Family tree poster','Pokolenia przodków':'Ancestor generations','Pokolenia potomków':'Descendant generations','Nazwiska kobiet':'Women surnames','rodowe':'maiden','po mężu':'married','po mężu i z domu':'married and maiden','Daty':'Dates','same lata':'years only','pełne daty':'full dates','bez dat':'no dates','zdjęcia osób':'photos of people','⬇ Pobierz PNG (do druku)':'⬇ Download PNG (for print)','⬇ Pobierz SVG':'⬇ Download SVG','Przygotowuję…':'Preparing…','Klucz Claude (odczyt aktów)':'Claude key (reading records)','☕ Postaw kawę autorowi':'☕ Buy the author a coffee','Brak skanów aktów':'No record scans','Dołącz zdjęcie aktu i odczytaj je w zakładce „Odczytaj akt”.':'Attach a photo of the record and read it in the “Read record” tab.','Imię i nazwisko':'Full name','z kim rodzina żyła na co dzień':'who the family lived with day to day','sąsiedzi, krewni lub kumowie':'neighbours, relatives or godparents','– często wskazówka do nieznanego pokrewieństwa.':'– often a clue to an unknown relationship.','Najczęściej występujący:':'Most frequent:','Pokazuje,':'Shows','Osoba':'Person','Drzewo':'Tree','Przodkowie':'Ancestors','Profil':'Profile','Osoby':'People','Mapa':'Map','Notatki':'Notes','Sieć':'Network','Sprzeczności':'Conflicts','Analizy':'Analyses',
+const EN={'brak':'none','Plakat':'Poster','Plakat drzewa':'Family tree poster','Pokolenia przodków':'Ancestor generations','Pokolenia potomków':'Descendant generations','Nazwiska kobiet':'Women surnames','rodowe':'maiden','po mężu':'married','po mężu i z domu':'married and maiden','Daty':'Dates','Jakość PNG':'PNG quality','zwykła (2×)':'normal (2×)','duża (3×)':'large (3×)','do dużego wydruku (4×)':'large print (4×)','Dopasuj':'Fit','same lata':'years only','pełne daty':'full dates','bez dat':'no dates','zdjęcia osób':'photos of people','⬇ Pobierz PNG (do druku)':'⬇ Download PNG (for print)','⬇ Pobierz SVG':'⬇ Download SVG','Przygotowuję…':'Preparing…','Klucz Claude (odczyt aktów)':'Claude key (reading records)','☕ Postaw kawę autorowi':'☕ Buy the author a coffee','Brak skanów aktów':'No record scans','Dołącz zdjęcie aktu i odczytaj je w zakładce „Odczytaj akt”.':'Attach a photo of the record and read it in the “Read record” tab.','Imię i nazwisko':'Full name','z kim rodzina żyła na co dzień':'who the family lived with day to day','sąsiedzi, krewni lub kumowie':'neighbours, relatives or godparents','– często wskazówka do nieznanego pokrewieństwa.':'– often a clue to an unknown relationship.','Najczęściej występujący:':'Most frequent:','Pokazuje,':'Shows','Osoba':'Person','Drzewo':'Tree','Przodkowie':'Ancestors','Profil':'Profile','Osoby':'People','Mapa':'Map','Notatki':'Notes','Sieć':'Network','Sprzeczności':'Conflicts','Analizy':'Analyses',
 'Szukaj osoby…':'Search person…','🔍 Szukaj osoby…':'🔍 Search person…','↶ Cofnij':'↶ Undo','Zapisz .ged':'Save .ged','Otwórz plik .ged':'Open .ged file','Nowe drzewo…':'New tree…','Wygląd':'Appearance','Jasny':'Light','Ciemny':'Dark','Jak w systemie':'System',
 'Porównaj z innym drzewem':'Compare with another tree','Pobierz plik do importu w MyHeritage':'Download file for MyHeritage import','Język':'Language',
 'Twoje drzewo rodu':'Your family tree','…albo zacznij nowe drzewo':'…or start a new tree','Imię (imiona)':'Given name(s)','Nazwisko':'Surname','mężczyzna':'male','kobieta':'female','Miejsce urodzenia':'Place of birth',
@@ -1036,7 +1036,7 @@ function aDna(){let raw='';try{raw=localStorage.getItem('dna')||''}catch(e){}
   <h3>Bez przypisanej gałęzi</h3>${res.filter(r=>!r.hit.length).map(r=>`<div>${esc(r.nm)} – <b>${r.c} cM</b> <small>${r.rel}</small></div>`).join('')||'<p>–</p>'}`}
 
 // ======== Plakat: drzewo do druku w stylu pergaminu (przodkowie nad osobą, potomkowie pod nią) ========
-var pk={up:3,dn:2,photos:true,zd:'rod',daty:'lata',title:'',m1:'VIRTUS\nTRADITIO\nFAMILIA',m2:'HONOR\nMEMORIA\nPOSTERITAS',b1:'Korzenie dają siłę…',b2:'…a potomkowie nadają sens.',herb:''};
+var pk={sc:2,up:3,dn:2,photos:true,zd:'rod',daty:'lata',title:'',m1:'VIRTUS\nTRADITIO\nFAMILIA',m2:'HONOR\nMEMORIA\nPOSTERITAS',b1:'Korzenie dają siłę…',b2:'…a potomkowie nadają sens.',herb:''};
 // dopełniacz do tytułu: „Józef Wiatrowski” → „Józefa Wiatrowskiego”, „Anna Garstka” → „Anny Garstki” (proste reguły; tytuł można poprawić ręcznie)
 function dopelniacz(p){const F=sex(p)==='F',w=cardName(p).n.split(' ');
   const g=x=>{const l=x.toLowerCase();if(F){if(/(sk|ck|dzk)a$/.test(l))return x.slice(0,-1)+'iej';if(/na$/.test(l))return x.slice(0,-1)+'ej';if(/ia$/.test(l))return x.slice(0,-1)+'i';if(/[kgl]a$/.test(l))return x.slice(0,-1)+'i';if(/a$/.test(l))return x.slice(0,-1)+'y';return x}
@@ -1091,21 +1091,28 @@ function plakatSVG(){const root=byId[cur],SW=150,RH=150,CW=132,PR=26,top=230;let
      <rect x="${-CW/2}" y="${PR+6}" width="${CW}" height="42" rx="3" fill="#f3e6c6" stroke="#5a3a1a"/><text y="${PR+21}" text-anchor="middle" class="pn">${esc(l2?l1:n)}</text>${l2?`<text y="${PR+34}" text-anchor="middle" class="pn">${esc(l2)}</text>`:''}<text y="${PR+(l2?45:34)}" text-anchor="middle" class="pd">${esc(yrs(p))}</text></g>`}).join('')}</g>
   <text x="${WW*.2}" y="${HH-70}" text-anchor="middle" class="pb">${esc(pk.b1)}</text><text x="${WW*.8}" y="${HH-70}" text-anchor="middle" class="pb">${esc(pk.b2)}</text>
   ${flour(WW/2,HH-58,.7)}</svg>`}
+var pz=1;const pzA=()=>{const v=$('#pkview svg');if(!v)return;v.style.width=pz*100+'%';v.style.maxWidth='none';v.style.height='auto';$('#pzl').textContent=Math.round(pz*100)+'%'}; // powiększenie podglądu plakatu (Ctrl + kółko)
 function renderPlakat(){const f=(k,l,t='text')=>`<label style="display:block;margin:6px 0"><small>${l}</small><br>${t==='area'?`<textarea data-pk="${k}" rows="3" style="width:100%">${esc(pk[k])}</textarea>`:`<input data-pk="${k}" value="${esc(pk[k])}" style="width:100%">`}</label>`;
+  // ile pokoleń w ogóle jest w górę i w dół od osoby w centrum (do listy „wszystkie”)
+  const pr=p=>{const f=famsOf(p,'FAMC')[0];return f?[byId[kid(f,'HUSB')?.val],byId[kid(f,'WIFE')?.val]].filter(Boolean):[]},ch=p=>marrOrd(p).flatMap(f=>kids(f,'CHIL').map(c=>byId[c.val]).filter(Boolean));
+  const dep=(p,nx,g=0)=>g>30?g:Math.max(g,...nx(p).map(x=>dep(x,nx,g+1))),mu=Math.max(1,dep(byId[cur],pr)),md=dep(byId[cur],ch);
+  const opts=(a,b,v)=>Array.from({length:b-a+1},(_,i)=>a+i).map(n=>`<option value="${n}" ${n==v?'selected':''}>${n}${n===b&&b>a?(LANG==='en'?' (all)':' (wszystkie)'):''}</option>`).join('');
+  if(pk.up>mu)pk.up=mu;if(pk.dn>md)pk.dn=md;
   $('#main').innerHTML=`<div style="display:flex;flex-wrap:wrap;min-height:calc(100vh - 120px)"><div style="width:270px;max-width:100%;flex:none;overflow:auto;padding:12px;border-right:1px solid var(--line)">
    <h3 style="margin-top:0">Plakat drzewa</h3><p><small>Osoba w centrum: <b>${esc(name(byId[cur]))}</b> (zmień, wybierając inną osobę w drzewie).</small></p>
    ${f('title','Tytuł (puste = „Drzewo genealogiczne …”)')}
-   <label>Pokolenia przodków <select data-pk="up">${[1,2,3,4,5].map(n=>`<option ${n==pk.up?'selected':''}>${n}</option>`).join('')}</select></label><br>
-   <label>Pokolenia potomków <select data-pk="dn">${[0,1,2,3,4].map(n=>`<option ${n==pk.dn?'selected':''}>${n}</option>`).join('')}</select></label><br>
+   <label>Pokolenia przodków <select data-pk="up">${opts(1,mu,pk.up)}</select></label><br>
+   <label>Pokolenia potomków <select data-pk="dn">${opts(0,md,pk.dn)}</select></label><br>
    <label><input type="checkbox" data-pk="photos" ${pk.photos?'checked':''}> zdjęcia osób</label><br>
    <label>Nazwiska kobiet <select data-pk="zd">${[['rod','rodowe'],['maz','po mężu'],['oba','po mężu i z domu']].map(([v,l])=>`<option value="${v}" ${v===pk.zd?'selected':''}>${l}</option>`).join('')}</select></label><br>
    <label>Daty <select data-pk="daty">${[['lata','same lata'],['pelne','pełne daty'],['brak','bez dat']].map(([v,l])=>`<option value="${v}" ${v===pk.daty?'selected':''}>${l}</option>`).join('')}</select></label>
    ${f('m1','Sentencja po lewej (wiersze)','area')}${f('m2','Sentencja po prawej','area')}${f('b1','Podpis na dole po lewej')}${f('b2','Podpis na dole po prawej')}
    <label style="display:block;margin:6px 0"><small>Herb / godło (obraz z dysku, opcjonalnie)</small><br><input type="file" id="pkherb" accept="image/*"></label>
+   <label>Jakość PNG <select data-pk="sc">${[[2,'zwykła (2×)'],[3,'duża (3×)'],[4,'do dużego wydruku (4×)']].map(([v,l])=>`<option value="${v}" ${v==pk.sc?'selected':''}>${l}</option>`).join('')}</select></label>
    <p><button class="pri" id="pkpng">⬇ Pobierz PNG (do druku)</button></p><p><button id="pksvg">⬇ Pobierz SVG</button></p>
    <p><small>Duże drzewo = duży plakat. PNG ma 2× rozdzielczość podglądu. Zdjęcia z MyHeritage mogą nie przejść do PNG (blokada serwera zdjęć) – wtedy pojawi się sylwetka.</small></p></div>
-   <div id="pkview" style="flex:1 1 300px;overflow:auto;background:#888;padding:16px">${plakatSVG()}</div></div>`;
-  const v=$('#pkview svg');v.style.width='100%';v.style.height='auto';
+   <div style="flex:1 1 300px;display:flex;flex-direction:column;min-width:0"><div style="padding:6px 16px;background:#777;display:flex;gap:6px;align-items:center"><button onclick="pz=Math.max(.25,pz/1.25);pzA()">−</button><button onclick="pz=1;pzA()">Dopasuj</button><button onclick="pz=Math.min(8,pz*1.25);pzA()">+</button><small id="pzl" style="color:#fff"></small></div><div id="pkview" style="flex:1;overflow:auto;background:#888;padding:16px">${plakatSVG()}</div></div></div>`;
+  pzA();$('#pkview').onwheel=e=>{if(!e.ctrlKey)return;e.preventDefault();pz=Math.min(8,Math.max(.25,pz*(e.deltaY<0?1.15:1/1.15)));pzA()};
   document.querySelectorAll('[data-pk]').forEach(e=>e.onchange=()=>{pk[e.dataset.pk]=e.type==='checkbox'?e.checked:e.tagName==='SELECT'&&/^\d+$/.test(e.value)?+e.value:e.value;renderPlakat()});
   $('#pkherb').onchange=e=>{const r=new FileReader();r.onload=()=>{pk.herb=r.result;renderPlakat()};if(e.target.files[0])r.readAsDataURL(e.target.files[0])};
   const fn=()=>(name(byId[cur])||'drzewo').replace(/[^\p{L}\d]+/gu,'_')+'_plakat';
@@ -1116,7 +1123,7 @@ function renderPlakat(){const f=(k,l,t='text')=>`<label style="display:block;mar
     let svg=plakatSVG();for(const u of [...new Set([...svg.matchAll(/href="(https?:[^"]+)"/g)].map(m=>m[1].replace(/&amp;/g,'&')))]){let d='';try{const bl=await (await fetch(u)).blob();d=await new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(bl)})}catch(e){}
       svg=svg.split(`href="${esc(u)}"`).join(d?`href="${d}"`:'href=""')}
     const im=new Image(),W=+svg.match(/width="(\d+(\.\d+)?)"/)[1],H=+svg.match(/height="(\d+(\.\d+)?)"/)[1];
-    im.onload=()=>{const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const x=c.getContext('2d');x.scale(2,2);x.drawImage(im,0,0);c.toBlob(bl=>{dl(URL.createObjectURL(bl),fn()+'.png');b.textContent='⬇ Pobierz PNG (do druku)'},'image/png')};
+    im.onload=()=>{const c=document.createElement('canvas');const k=Math.min(pk.sc,16000/Math.max(W,H),Math.sqrt(2.5e8/(W*H)));c.width=W*k;c.height=H*k;const x=c.getContext('2d');x.scale(k,k);x.drawImage(im,0,0);c.toBlob(bl=>{dl(URL.createObjectURL(bl),fn()+'.png');b.textContent='⬇ Pobierz PNG (do druku)'},'image/png')};
     im.onerror=()=>{alert('Nie udało się utworzyć PNG – pobierz SVG.');b.textContent='⬇ Pobierz PNG (do druku)'};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}}
 
 function renderPeople(){
