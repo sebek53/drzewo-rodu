@@ -912,27 +912,40 @@ if(LANG==='en')EPID.forEach(e=>e[2]={'cholera':'cholera','głód i tyfus':'famin
 const lnk=p=>`<a href="#" onclick="go('${p.id}','profil');return false">${esc(name(p))}</a>`;
 function renderAnaliz(){const T={os:'Oś czasu rodu',wies:'Kto żył w tej wsi',listy:'Listy do archiwów',stat:'Statystyki',braki:'Brakujące ogniwa',dna:'DNA wg gałęzi',kolo:'Koło przodków w czasie'};
   const body=({os:aOs,wies:aWies,listy:aListy,stat:aStat,braki:aBraki,dna:aDna,kolo:aKolo})[atab]();
-  $('#main').innerHTML=`<div style="padding:16px;max-width:1150px"><div class="ptabs" style="margin:0 0 14px;padding:0">${Object.entries(T).map(([k,l])=>`<span class="${k===atab?'on':''}" onclick="atab='${k}';render()">${l}</span>`).join('')}</div>${body}</div>`;
+  $('#main').innerHTML=`<div style="padding:16px;max-width:1150px;margin:0 auto"><div class="ptabs" style="margin:0 0 14px;padding:0">${Object.entries(T).map(([k,l])=>`<span class="${k===atab?'on':''}" onclick="atab='${k}';render()">${l}</span>`).join('')}</div>${body}</div>`;
   document.querySelectorAll('#main [data-a]').forEach(e=>e.onchange=()=>{aSel[e.dataset.a]=e.value;render()})}
 const selS=(k,opts,v)=>`<select data-a="${k}">${opts.map(([a,b])=>`<option value="${esc(a)}" ${String(a)===String(v)?'selected':''}>${esc(b)}</option>`).join('')}</select>`;
 
-// 7. koło przodków w czasie: klin = osoba, kąt = miejsce w drzewie (lewa połowa ojciec, prawa matka), promień = lata życia (środek = najnowszy rok), kolor = pokolenie
-function aKolo(){const root=byId[cur]||indis()[0];if(!root)return'<p>Brak osób.</p>';const G=+(aSel.kg||7),now=new Date().getFullYear();
+// 7. koło przodków w czasie: klin = osoba, kąt = miejsce w drzewie (lewa połowa ojciec, prawa matka), promień = lata życia (środek = dziś), kolor = pokolenie
+function aKolo(){const t=(pl,en)=>LANG==='en'?en:pl,root=byId[cur]||indis()[0];if(!root)return`<p>${t('Brak osób.','No people.')}</p>`;const G=+(aSel.kg||7),now=new Date().getFullYear();
   const par=p=>{const f=p&&famsOf(p,'FAMC')[0];return f?[byId[kid(f,'HUSB')?.val],byId[kid(f,'WIFE')?.val]]:[]};
-  const W=[],walk=(p,n,g,kidB)=>{if(!p||g>=G)return;let b=by_(p),d=dy_(p),est=!b||!d;b=b||(kidB?kidB-30:null);if(!b)return;d=d||Math.min(now,b+60);
+  const W=[],M=[],walk=(p,n,g,kidB)=>{if(g>=G)return;if(!p){if(kidB)M.push({n,g,b:kidB-30,d:kidB});return}
+    let b=by_(p),d=dy_(p),est=!b||!d;b=b||(kidB?kidB-30:null);if(!b)return;d=d||(b+100>now?now:b+60);
     W.push({p,n,g,b,d,est});const[fa,mo]=par(p);walk(fa,2*n,g+1,b);walk(mo,2*n+1,g+1,b)};
-  walk(root,1,0,null);if(!W.length)return'<p>Wybrana osoba nie ma daty urodzenia.</p>';
-  const top=Math.max(...W.map(w=>w.d)),old=Math.min(...W.map(w=>w.b)),R=380,k=R/Math.max(1,top-old),C=R+40,rr=y=>(top-y)*k;
-  const pt=(r,a)=>[C+r*Math.sin(a*Math.PI/180),C-r*Math.cos(a*Math.PI/180)].map(v=>v.toFixed(1)).join(' ');
-  const COL=['#868e96','#4dabf7','#69db7c','#ffd43b','#ff922b','#f06595','#9775fa','#20c997','#a9e34b','#e599f7'];
-  const ring=[];for(let y=Math.ceil(old/50)*50;y<=top;y+=50){const r=rr(y);ring.push(`<circle cx="${C}" cy="${C}" r="${r}" fill="none" stroke="#ced4da" stroke-dasharray="3 4"/><text x="${C+3}" y="${C-r-3}" font-size="11" fill="#868e96">${y}</text>`)}
-  const sl=W.map(w=>{const s=1<<w.g,f=(w.n-s)/s,a1=180+f*360,a2=a1+360/s,r1=rr(w.d),r2=rr(w.b),L=a2-a1>180?1:0;
-    const d=w.g?`M${pt(r1,a1)}A${r1} ${r1} 0 ${L} 1 ${pt(r1,a2)}L${pt(r2,a2)}A${r2} ${r2} 0 ${L} 0 ${pt(r2,a1)}Z`:`M${C} ${C-r2}a${r2} ${r2} 0 1 0 .1 0ZM${C} ${C-r1}a${r1} ${r1} 0 1 1 -.1 0Z`;
-    return`<path d="${d}" fill="${COL[w.g%COL.length]}" fill-opacity="${w.est?.4:.85}" stroke="#fff" stroke-width=".7" fill-rule="evenodd" style="cursor:pointer" onclick="go('${w.p.id}','profil')"><title>${esc(name(w.p))} (${esc(life(w.p))})${w.est?' – daty szacunkowe':''}</title></path>`});
-  const ax=`<path d="M${C} ${C-R-20}V${C+R+20}" stroke="#adb5bd"/><text x="${C-R}" y="${C-R}" font-size="13" fill="#495057">po mieczu (ojciec)</text><text x="${C+R}" y="${C-R}" text-anchor="end" font-size="13" fill="#495057">po kądzieli (matka)</text>`;
-  return`<p>Osoba: <b>${esc(name(root))}</b> <small>(zmień, wybierając osobę w drzewie)</small> · Pokolenia: ${selS('kg',[3,4,5,6,7,8,9,10].map(x=>[x,x]),G)}</p>
-  <svg viewBox="0 0 ${2*C} ${2*C}" style="width:100%;max-width:${2*C}px;font-family:sans-serif">${ring.join('')}${sl.join('')}${ax}</svg>
-  <p><small>Każdy klin to jedna osoba: zaczyna się na roku urodzenia (dalej od środka), kończy na roku zgonu. Kolor = pokolenie. Lewa połowa to przodkowie ojca, prawa matki; dolne ćwiartki to linia męska ojca i żeńska matki. Blade kliny mają daty szacunkowe (brak urodzenia: 30 lat przed dzieckiem, brak zgonu: 60 lat życia). Kliknij klin, aby otworzyć osobę.</small></p>`}
+  walk(root,1,0,null);if(!W.length)return`<p>${t('Wybrana osoba nie ma daty urodzenia.','The selected person has no birth date.')}</p>`;
+  const top=now,old=Math.min(...W.map(w=>w.b),...M.map(w=>w.b)),R0=70,R=420,k=(R-R0)/Math.max(1,top-old),C=R+30,rr=y=>R0+(top-y)*k;
+  const P=(r,a)=>[C+r*Math.sin(a*Math.PI/180),C-r*Math.cos(a*Math.PI/180)],pt=(r,a)=>P(r,a).map(v=>v.toFixed(1)).join(' ');
+  const COL=['#4a4a4a','#b5d17a','#7ccbb5','#7aaad6','#a99ae0','#d98fc0','#e8a87c','#e8d27c','#9fd3e0','#c9e07c'];
+  const wedge=(w,a1,a2)=>{const r1=rr(w.d),r2=rr(w.b),L=a2-a1>180?1:0;return`M${pt(r1,a1)}A${r1} ${r1} 0 ${L} 1 ${pt(r1,a2)}L${pt(r2,a2)}A${r2} ${r2} 0 ${L} 0 ${pt(r2,a1)}Z`};
+  const ang=w=>{const s=1<<w.g,f=(w.n-s)/s;return[180+f*360,180+(f+1/s)*360]};
+  // napis wzdłuż promienia, odwrócony na lewej połowie, żeby nie stał do góry nogami
+  const label=(w,a1,a2,txt,sub)=>{const am=(a1+a2)/2,r1=rr(w.d),r2=rr(w.b),rm=(r1+r2)/2,arc=(a2-a1)*Math.PI/180*rm,len=r2-r1-6,fs=Math.min(12,arc*.42);if(fs<5||len<18)return'';
+    let th=am-90;if(th>90&&th<270)th-=180;const[x,y]=P(rm,am),cut=s=>s.length>len/(fs*.55)?s.slice(0,Math.max(1,Math.floor(len/(fs*.55))-1))+'…':s,two=sub&&arc>fs*2.6;
+    return`<text transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${th.toFixed(1)})" text-anchor="middle" font-size="${fs.toFixed(1)}" fill="#1b1b1b" pointer-events="none">${two?`<tspan x="0" dy="-.15em">${esc(cut(txt))}</tspan><tspan x="0" dy="1.1em" font-size="${(fs*.8).toFixed(1)}">${esc(sub)}</tspan>`:`<tspan dy=".35em">${esc(cut(txt))}</tspan>`}</text>`};
+  const ring=[],axis=[];for(let y=Math.floor(top/50)*50;y>=old-25;y-=50){const r=rr(y);ring.push(`<circle cx="${C}" cy="${C}" r="${r.toFixed(1)}" fill="none" stroke="#666" stroke-dasharray="2 4"/>`);
+    [-1,1].forEach(s=>axis.push(`<text x="${C+s*r}" y="${C+14}" text-anchor="middle" font-size="11" fill="#aaa">${y}</text>`))}
+  const sl=W.filter(w=>w.g).sort((a,b)=>a.g-b.g).map(w=>{const[a1,a2]=ang(w);return`<path d="${wedge(w,a1,a2)}" fill="${COL[w.g%COL.length]}" stroke="${w.est?'#eee':'#222'}" stroke-width="1.2"${w.est?' stroke-dasharray="4 3"':''} style="cursor:pointer" onclick="go('${w.p.id}','profil')"><title>${esc(name(w.p))} (${esc(life(w.p))})${w.est?t(' – daty szacunkowe',' – estimated dates'):''}</title></path>${label(w,a1,a2,name(w.p),life(w.p))}`});
+  const ms=M.map(w=>{const[a1,a2]=ang(w);return`<path d="${wedge(w,a1,a2)}" fill="url(#hatch)" stroke="#555"><title>${t('Nieznany przodek','Unknown ancestor')}</title></path>`});
+  const rw=W[0],rb=rr(rw.b);
+  return`<p>${t('Osoba','Person')}: <b>${esc(name(root))}</b> <small>(${t('zmień, wybierając osobę w drzewie','change by selecting a person in the tree')})</small> · ${t('Pokolenia','Generations')}: ${selS('kg',[3,4,5,6,7,8,9,10].map(x=>[x,x]),G)}</p>
+  <svg viewBox="0 0 ${2*C} ${2*C}" style="display:block;margin:0 auto;width:100%;max-width:${2*C}px;font-family:Montserrat,Arial,sans-serif;background:#222;border-radius:12px">
+   <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V6" stroke="#555" stroke-width="1.5"/></pattern></defs>
+   ${ring.join('')}<path d="M${C-R-20} ${C}H${C+R+20}M${C} ${C-R-20}V${C+R+20}" stroke="#777"/>${ms.join('')}${sl.join('')}
+   <circle cx="${C}" cy="${C}" r="${rb}" fill="${COL[1]}" fill-opacity=".35" stroke="#222"/><circle cx="${C}" cy="${C}" r="${R0}" fill="#2e2e2e" stroke="#222" style="cursor:pointer" onclick="go('${root.id}','profil')"><title>${esc(name(root))} (${esc(life(root))})</title></circle>
+   <text x="${C}" y="${C-6}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" pointer-events="none">${esc(name(root).split(' ').slice(-1)[0])}</text><text x="${C}" y="${C+10}" text-anchor="middle" font-size="11" fill="#ccc" pointer-events="none">${esc(name(root).split(' ')[0])}</text><text x="${C}" y="${C+26}" text-anchor="middle" font-size="10" fill="#aaa" pointer-events="none">${top}</text>
+   ${axis.join('')}<text x="22" y="26" font-size="13" fill="#ddd">${t('po mieczu (ojciec)','paternal (father)')}</text><text x="${2*C-22}" y="26" text-anchor="end" font-size="13" fill="#ddd">${t('po kądzieli (matka)','maternal (mother)')}</text></svg>
+  <p><small>${t('Każdy klin to jedna osoba: zaczyna się na roku urodzenia (dalej od środka), kończy na roku zgonu. Środek to dziś, okręgi co 50 lat. Kolor = pokolenie. Lewa połowa to przodkowie ojca, prawa matki; dolne ćwiartki to linia męska ojca i żeńska matki. Kliny z przerywaną ramką mają daty szacunkowe (brak urodzenia: 30 lat przed dzieckiem, brak zgonu: 60 lat życia), kreskowane pola to nieznani przodkowie. Kliknij klin, aby otworzyć osobę.',
+   'Each wedge is one person: it starts at the birth year (farther from the centre) and ends at the death year. The centre is today, rings every 50 years. Colour = generation. Left half: father\'s ancestors, right half: mother\'s; the lower quarters are the father\'s male line and the mother\'s female line. Wedges with a dashed border have estimated dates (no birth: 30 years before the child, no death: 60 years of life), hatched fields are unknown ancestors. Click a wedge to open the person.')}</small></p>`}
 
 // 1. oś czasu rodu: urodzenia/zgony na dekady + zdarzenia historyczne + zgony w latach epidemii
 function aOs(){const sl=surnameList(),k=aSel.osk??'';const ps=indis().filter(p=>!k||srnKeyOf(p)===k);const dec={};
