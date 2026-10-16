@@ -142,7 +142,7 @@ const EN={'brak':'none','Plakat':'Poster','Plakat drzewa':'Family tree poster','
 'urodzenia osób o tym nazwisku rok po roku, do ostatniego pokolenia':'births of people with this surname, year by year, to the last generation','▶ Animacja migracji w czasie':'▶ Migration animation','⏸ Zatrzymaj':'⏸ Stop','Do roku:':'Up to year:','strzałka: miejsce urodzenia rodzica → dziecka':'arrow: parent’s birthplace → child’s',
 'miejsca urodzeń wg lat (skąd i kiedy)':'birthplaces by year (where and when)','kolor = pokolenie względem tej osoby':'colour = generation relative to this person','📍 Popraw położenie':'📍 Fix location','Pokaż na mapie z tamtej epoki':'Show on a map from that time','Brak połączenia z internetem – mapa niedostępna.':'No internet connection – map unavailable.',
 'pokolenie osoby':'person’s generation','rodzice':'parents','dziadkowie':'grandparents','pradziadkowie':'great-grandparents','dzieci':'children','wnuki':'grandchildren','prawnuki':'great-grandchildren',
-'+ Nowa notatka':'+ New note','Brak notatek.':'No notes.','Dodaj pierwszą notatkę.':'Add the first note.','Kopiuj':'Copy','Edycja':'Edit',
+'+ Nowa notatka':'+ New note','Mapy i obrazy':'Maps and images','+ Dodaj mapę lub obraz':'+ Add a map or image','Opis':'Description','Brak notatek.':'No notes.','Dodaj pierwszą notatkę.':'Add the first note.','Kopiuj':'Copy','Edycja':'Edit',
 'Sieć społeczna rodu – kumowie, świadkowie, zgłaszający':'Family social network – godparents, witnesses, informants','chrzestny':'godparent','świadek':'witness','zgłaszający zgon/urodzenie':'informant (death/birth)','rodzina (zięć, brat…)':'family (son-in-law, brother…)',
 'Detektyw sprzeczności':'Conflict detective','Brak wykrytych sprzeczności.':'No conflicts found.','Sprawdź daty – zbyt młody wiek lub zdarzenie przed narodzinami':'Check dates – too young or event before birth',
 'Oś czasu rodu':'Family timeline','Koło przodków w czasie':'Ancestor time wheel','po mieczu (ojciec)':'paternal (father)','po kądzieli (matka)':'maternal (mother)','Kto żył w tej wsi':'Who lived in this village','Listy do archiwów':'Letters to archives','Statystyki':'Statistics','Brakujące ogniwa':'Missing links','DNA wg gałęzi':'DNA by branch',
@@ -753,7 +753,31 @@ function renderNotes(){const ns=notes();if(!ns.find(n=>n.id===noteSel))noteSel=n
      <div class="row" style="margin-top:8px"><button class="pri" onclick="saveNote()">Zapisz</button><button onclick="noteEdit=false;renderNotes()">Anuluj</button>
       <small class="mut" style="margin-left:auto">**pogrubienie**, # nagłówek, - lista, | tabela |</small></div>`:
     `<div class="row" style="margin-bottom:6px"><h2 style="margin:0;flex:1">${esc(noteTitle(n))}</h2><button onclick="noteEdit=true;renderNotes()">Edytuj</button><button style="color:#c33" onclick="delNote()">Usuń</button></div>
-     <div class="nmd">${md(noteBody(n))}</div>`}</div></div>`}
+     <div class="nmd">${md(noteBody(n))}</div>${noteImgs(n)}`}</div></div>`}
+// mapy i obrazy przy notatce: „1 OBJE” (FILE = JPEG do 2000px, TITL = tytuł, NOTE = opis) zapisane w .ged razem z notatką
+const nimgs=n=>kids(n,'OBJE');
+function noteImgs(n){const L=nimgs(n);return`<h3 style="margin:22px 0 8px">Mapy i obrazy</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">${L.map((o,i)=>`<div style="border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)">
+   <img src="${esc(sub(o,'FILE')?.val||'')}" alt="" style="width:100%;height:150px;object-fit:cover;cursor:zoom-in;display:block" onclick="nimgShow(${i})">
+   <div style="padding:8px"><b>${esc(sub(o,'TITL')?.val||'(bez tytułu)')}</b>${sub(o,'NOTE')?.val?`<div class="mut" style="font-size:12px;white-space:pre-wrap;margin-top:4px">${esc(sub(o,'NOTE').val)}</div>`:''}
+   <div class="row" style="margin-top:6px"><button onclick="nimgEdit(${i})">Opis</button><button style="color:#c33" onclick="nimgDel(${i})">Usuń</button></div></div></div>`).join('')}
+   <label style="display:flex;align-items:center;justify-content:center;min-height:150px;border:2px dashed var(--line);border-radius:8px;cursor:pointer;text-align:center;padding:8px">+ Dodaj mapę lub obraz<input type="file" accept="image/*" multiple style="display:none" onchange="nimgAdd(this.files)"></label></div>`}
+async function nimgAdd(files){const n=byId[noteSel];for(const file of files){try{const b=await createImageBitmap(file),s=Math.min(1,2000/Math.max(b.width,b.height)),c=document.createElement('canvas');
+  c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext('2d').drawImage(b,0,0,c.width,c.height);
+  const o={lvl:1,id:null,tag:'OBJE',val:'',kids:[]};n.kids.push(o);setKid(o,'FORM','jpg');setKid(o,'FILE',c.toDataURL('image/jpeg',.82));setKid(o,'TITL',file.name.replace(/\.[^.]+$/,''));
+ }catch(e){alert('Nie udało się wczytać: '+file.name)}}persist();renderNotes();if(fileHandle)saveFile(true)}
+function nimgEdit(i){const o=nimgs(byId[noteSel])[i],t=prompt('Tytuł (np. Łuszczanów, mapa WIG 1939)',sub(o,'TITL')?.val||'');if(t===null)return;
+  const d=prompt('Opis (skąd mapa, rok, co widać, np. zagroda Garstków)',sub(o,'NOTE')?.val||'');if(d===null)return;setKid(o,'TITL',t.trim());setKid(o,'NOTE',d.trim());persist();renderNotes();if(fileHandle)saveFile(true)}
+function nimgDel(i){const n=byId[noteSel],o=nimgs(n)[i];if(!confirm(`Usunąć „${sub(o,'TITL')?.val||'obraz'}”?`))return;n.kids.splice(n.kids.indexOf(o),1);persist();renderNotes();if(fileHandle)saveFile(true)}
+// podgląd w pełnym rozmiarze: kółko myszy powiększa, przeciąganie przesuwa, klik w tło zamyka
+function nimgShow(i){const o=nimgs(byId[noteSel])[i],d=document.createElement('div');let z=1,x=0,y=0,dr=null;
+  d.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden';
+  d.innerHTML=`<img src="${esc(sub(o,'FILE')?.val||'')}" alt="" style="max-width:96vw;max-height:84vh;cursor:grab;user-select:none" draggable="false"><div style="color:#fff;max-width:900px;padding:10px 16px;text-align:center"><b>${esc(sub(o,'TITL')?.val||'')}</b><div style="white-space:pre-wrap;opacity:.85">${esc(sub(o,'NOTE')?.val||'')}</div><small style="opacity:.6">kółko myszy: powiększenie · przeciągnij: przesuń · Esc lub klik w tło: zamknij</small></div>`;
+  const im=d.firstChild,ap=()=>im.style.transform=`translate(${x}px,${y}px) scale(${z})`,close=()=>{d.remove();removeEventListener('keydown',k)},k=e=>{if(e.key==='Escape')close()};
+  d.onclick=e=>{if(e.target===d)close()};addEventListener('keydown',k);
+  d.onwheel=e=>{e.preventDefault();z=Math.min(10,Math.max(1,z*(e.deltaY<0?1.2:1/1.2)));if(z===1)x=y=0;ap()};
+  im.onpointerdown=e=>{dr={sx:e.clientX-x,sy:e.clientY-y};im.setPointerCapture(e.pointerId)};im.onpointermove=e=>{if(dr){x=e.clientX-dr.sx;y=e.clientY-dr.sy;ap()}};im.onpointerup=()=>dr=null;
+  document.body.append(d)}
 function addNote(){const n=newNode('NOTE','R');n.val='Nowa notatka\n';noteSel=n.id;noteEdit=true;persist();renderNotes()}
 function saveNote(){const n=byId[noteSel];n.val=($('#ntit').value.trim()||'(bez tytułu)')+'\n'+$('#nbody').value;noteEdit=false;persist();renderNotes();if(fileHandle)saveFile(true)}
 function delNote(){const n=byId[noteSel];if(!confirm(`Usunąć notatkę „${noteTitle(n)}”?`))return;roots.splice(roots.indexOf(n),1);delete byId[noteSel];noteSel=null;persist();renderNotes()}
