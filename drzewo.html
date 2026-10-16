@@ -247,6 +247,11 @@ function setKid(n,tag,val){let k=kid(n,tag);if(!val){if(k)n.kids.splice(n.kids.i
 // polskie daty → GEDCOM: „3 czerwca 1976”, „3 cze 1976”, „03.06.1976”, „1976-06-03”, „VI 1976”, „około 1850”, „przed 1900”, „po 1900”, „między 1900 a 1910”
 const GM=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],RZ=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'],
   PLM=[/^sty/,/^lut/,/^mar/,/^kwi/,/^maj/,/^cze/,/^lip/,/^sie/,/^wrz/,/^pa[źz]/,/^lis/,/^gru/];
+// data GEDCOM -> czytelna polska, np. "ABT 12 NOV 1925" -> "ok. 12 listopada 1925" (do pól edycji; gedDate zamienia z powrotem)
+const MPL=['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'],MPN=['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
+function datePL(g){g=String(g||'').trim();if(!g||LANG==='en')return g;const one=x=>x.replace(/^(\d+ )?(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b/i,(_,d,m)=>d?d+MPL[GM.indexOf(m.toUpperCase())]:MPN[GM.indexOf(m.toUpperCase())]).replace(/^0+(\d)/,'$1');let m;
+  if(m=g.match(/^BET (.+) AND (.+)$/i))return`między ${one(m[1])} a ${one(m[2])}`;if(m=g.match(/^FROM (.+) TO (.+)$/i))return`od ${one(m[1])} do ${one(m[2])}`;
+  if(m=g.match(/^(ABT|EST|CAL) (.+)$/i))return`ok. ${one(m[2])}`;if(m=g.match(/^BEF (.+)$/i))return`przed ${one(m[1])}`;if(m=g.match(/^AFT (.+)$/i))return`po ${one(m[1])}`;return one(g)}
 function gedDate(t){t=String(t||'').trim().replace(/\s+/g,' ').replace(/\s*r\.?$/i,'');if(!t)return'';
   const one=x=>{x=x.trim();let m;
     if(m=x.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))return`${+m[3]} ${GM[m[2]-1]} ${m[1]}`;
@@ -255,7 +260,8 @@ function gedDate(t){t=String(t||'').trim().replace(/\s+/g,' ').replace(/\s*r\.?$
     if(m=x.match(/^(?:(\d{1,2})\.?\s+)?([a-ząćęłńóśźż]+|[IVX]+)\.?\s+(\d{4})$/i)){const w=m[2].toLowerCase(),r=RZ.indexOf(m[2].toUpperCase()),i=r>=0?r:PLM.findIndex(re=>re.test(w));
       const g=i>=0?GM[i]:GM.includes(m[2].toUpperCase().slice(0,3))?m[2].toUpperCase().slice(0,3):null;if(g)return`${m[1]?+m[1]+' ':''}${g} ${m[3]}`}
     return x.toUpperCase()};
-  let m;if(m=t.match(/^(?:między|pomiędzy|miedzy)\s+(.+?)\s+(?:a|i)\s+(.+)$/i))return`BET ${one(m[1])} AND ${one(m[2])}`;
+  let m;if(m=t.match(/^od\s+(.+?)\s+do\s+(.+)$/i))return`FROM ${one(m[1])} TO ${one(m[2])}`;
+  if(m=t.match(/^(?:między|pomiędzy|miedzy)\s+(.+?)\s+(?:a|i)\s+(.+)$/i))return`BET ${one(m[1])} AND ${one(m[2])}`;
   if(m=t.match(/^(około|ok\.?|ok|około roku|circa|ca\.?)\s+(.+)$/i))return`ABT ${one(m[2])}`;
   if(m=t.match(/^przed\s+(.+)$/i))return`BEF ${one(m[1])}`;if(m=t.match(/^po\s+(.+)$/i))return`AFT ${one(m[1])}`;return one(t)}
 function setEv(p,t,date,plac){date=gedDate(date);if(!date&&!plac){setKid(p,t,'');return}const e=kid(p,t)||setKid(p,t,'Y');e.val='';setKid(e,'DATE',date);setKid(e,'PLAC',plac)}
@@ -350,7 +356,7 @@ const txtOf=n=>!n||n.tag==='OBJE'?'':(n.val||'')+' '+n.kids.map(txtOf).join(' ')
 const hasAkt=(n,re)=>n&&kids(n,'OBJE').some(o=>re.test(sub(o,'TITL')?.val||''));
 function evOf(kind,p,f){
   if(kind==='k'){const t=txtOf(p)+' '+(f?kids(f,'NOTE').map(txtOf).join(' '):'');if(/HIPOTEZA \(niepotwierdzona\)/i.test(t))return'h';
-    if(hasAkt(p,/^Akt (urodz|chrzt)|^Akt.*(chrzest|chrztu|urodzenia)/i))return'a';if(/Geneteka|Akt (ur|chrz)|akt nr|akt \d/i.test(t)||kid(p,'SOUR'))return'i';return'r'}
+    if(hasAkt(p,/^Akt (urodz|chrzt)|^Akt.*(chrzest|chrztu|urodzenia)/i))return'a';if(/Geneteka|Akt (ur|chrz)|akt nr|\bakt \d/i.test(t)||kid(p,'SOUR'))return'i';return'r'}
   const sp=f?['HUSB','WIFE'].map(k=>byId[kid(f,k)?.val]):[],t=txtOf(f);if(/HIPOTEZA \(niepotwierdzona\)/i.test(t))return'h';
   if(hasAkt(f,/^Akt.*ślub/i)||sp.some(x=>hasAkt(x,/^Akt.*ślub/i)))return'a';if(/Geneteka|akt ślubu|Akt ślubu/i.test(t)||kid(f,'SOUR'))return'i';return'r'}
 // podsumowanie dla całego drzewa: ile powiązań rodzic–dziecko na jakim dowodzie, do którego roku sięga ciąg aktów
@@ -584,7 +590,7 @@ function facts(p){
 // formularz edycji – ten sam w profilu i w panelu drzewa (pola #e_* czyta saveP)
 function editForm(p,cancel,panel){const id=p.id,note=kids(p,'NOTE').map(n=>noteTxt(n.val)).join('\n\n');
   const f=(l,i,v)=>`<b>${l}</b><input id="${i}" value="${esc(v)}">`;
-  const two=(l,a,b,t,n=p)=>`<b>${l}</b><div class="row" style="flex-wrap:${panel?'wrap':'nowrap'}"><input id="${a}" placeholder="data, np. ABT 1745" value="${esc(sub(n,t+'.DATE')?.val||'')}" style="flex:1;min-width:0"><input id="${b}" placeholder="miejsce" value="${esc(sub(n,t+'.PLAC')?.val||'')}" style="flex:2;min-width:0"></div>`;
+  const two=(l,a,b,t,n=p)=>`<b>${l}</b><div class="row" style="flex-wrap:${panel?'wrap':'nowrap'}"><input id="${a}" placeholder="data, np. 3 czerwca 1976, ok. 1745" title="Wpisz po polsku: 3 czerwca 1976, 3.06.1976, ok. 1745, przed 1800, między 1850 a 1855" value="${esc(datePL(sub(n,t+'.DATE')?.val))}" style="flex:1 1 ${panel?'100%':'150px'};min-width:0"><input id="${b}" placeholder="miejsce" value="${esc(sub(n,t+'.PLAC')?.val||'')}" style="flex:2;min-width:0"></div>`;
   // śluby: jedno pole daty+miejsca na każdy związek
   const marr=famsOf(p,'FAMS').map((f,i)=>{const sp=spouseIn(f,id);
     return two(`Ślub<br><small style="font-weight:400">z ${esc(sp?name(sp):'nieznanym')}</small>`,`e_m${i}d`,`e_m${i}p`,'MARR',f)}).join('');
