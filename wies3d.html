@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wieś w 3D</title>
+<style>
+html,body{margin:0;height:100%;background:#cfd8dc;font-family:Montserrat,Arial,sans-serif;overflow:hidden}
+#info{position:fixed;left:12px;top:12px;max-width:360px;background:rgba(255,255,255,.88);border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.45;color:#222}
+#info b{font-size:15px}
+.lab{position:fixed;transform:translate(-50%,-100%);font:700 13px Montserrat,Arial,sans-serif;color:#222;background:rgba(255,255,255,.8);padding:2px 6px;border-radius:4px;pointer-events:none;white-space:nowrap}
+</style></head><body>
+<div id="info"><b id="tt"></b><br>Poglądowy obraz wsi z XIX w.: zagrody wzdłuż drogi, krzyż przydrożny, pola pasami, pastwisko gromadzkie, las. Liczbę zagród można zmienić w adresie (&amp;d=24).<br><small>Mysz: obracanie · kółko: przybliżenie · prawy przycisk: przesuwanie. Układ i budynki są typowe dla wsi tamtych czasów, nie odwzorowują tej konkretnej wsi.</small><br><button id="near">🏠 Zbliż na chałupę</button> <button id="far">🗺 Cała wieś</button></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const Q=new URLSearchParams(location.search),NAME=Q.get('m')||'Wieś',HOUSES=Math.max(4,Math.min(60,+Q.get('d')||18));document.getElementById('tt').textContent=NAME+' – widok 3D';document.title=NAME+' w 3D';
+// skala: 1 jednostka = 10 m; wieś ok. 2,5 km2 → plansza 300×200
+const R=new THREE.WebGLRenderer({antialias:true});R.outputColorSpace=THREE.SRGBColorSpace;R.setPixelRatio(Math.min(2,devicePixelRatio));R.setSize(innerWidth,innerHeight);R.shadowMap.enabled=true;document.body.append(R.domElement);
+const S=new THREE.Scene();S.background=new THREE.Color('#cfdde6');S.fog=new THREE.Fog('#cfdde6',220,520);
+const C=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,1,2000);C.position.set(-60,90,140);
+const O=new OrbitControls(C,R.domElement);O.target.set(0,0,0);O.maxPolarAngle=1.45;O.enableDamping=true;
+S.add(new THREE.HemisphereLight('#fff8e8','#6b7a4a',.9));const sun=new THREE.DirectionalLight('#fff1d6',1.6);sun.position.set(-120,160,80);sun.castShadow=true;
+Object.assign(sun.shadow.camera,{left:-200,right:200,top:200,bottom:-200,far:500});sun.shadow.mapSize.set(2048,2048);S.add(sun);
+const M=c=>new THREE.MeshLambertMaterial({color:c});
+let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+// ziemia i pola pasami (łany) – na północ i południe od wsi
+const g=new THREE.Mesh(new THREE.PlaneGeometry(600,500),M('#8fa35a'));g.rotation.x=-Math.PI/2;g.receiveShadow=true;S.add(g);
+const fieldCols=['#c9b26b','#a9a253','#b98f55','#d2c27d','#8d9a4e','#b5a35e'];
+for(const [z0,z1] of [[-150,-25],[25,60]])for(let x=-200;x<200;x+=7){const f=new THREE.Mesh(new THREE.PlaneGeometry(6.6,z1-z0),M(fieldCols[Math.floor(rnd()*fieldCols.length)]));f.rotation.x=-Math.PI/2;f.position.set(x+3.3,.05,(z0+z1)/2);f.receiveShadow=true;S.add(f)}
+// pastwisko gromadzkie i łąki przy strumieniu (40 + 20 morgów)
+const past=new THREE.Mesh(new THREE.PlaneGeometry(70,40),M('#7fa04f'));past.rotation.x=-Math.PI/2;past.position.set(110,.06,-40);S.add(past);
+// droga wiejska wschód–zachód i drogi do Słupu i Rybiego
+const road=(pts,w=3)=>{const c=new THREE.CatmullRomCurve3(pts.map(([x,z])=>new THREE.Vector3(x,.12,z)));const n=60;for(let i=0;i<n;i++){const a=c.getPoint(i/n),b=c.getPoint((i+1)/n),seg=new THREE.Mesh(new THREE.PlaneGeometry(w,a.distanceTo(b)+.4),M('#b9a27a'));seg.rotation.x=-Math.PI/2;seg.rotation.z=-Math.atan2(b.x-a.x,b.z-a.z);seg.position.copy(a.clone().add(b).multiplyScalar(.5));S.add(seg)}};
+road([[-220,-5],[-120,-2],[-40,0],[40,2],[120,8],[230,20]]);road([[-20,0],[-40,60],[-70,180]],2.4);road([[60,3],[120,40],[170,90]],2.4);
+// las na południu (za polami)
+const tg=new THREE.ConeGeometry(2.6,9,7),tt=new THREE.CylinderGeometry(.4,.5,2.5,5),tm=M('#2f5a2e'),tk=M('#5a3d22');
+const N=1400,crowns=new THREE.InstancedMesh(tg,tm,N),trunks=new THREE.InstancedMesh(tt,tk,N),mx=new THREE.Matrix4();
+for(let i=0;i<N;i++){const x=-260+rnd()*520,z=70+rnd()*150+Math.sin(x/40)*15,s=.7+rnd()*.7;mx.compose(new THREE.Vector3(x,4.5*s+2,z),new THREE.Quaternion(),new THREE.Vector3(s,s,s));crowns.setMatrixAt(i,mx);mx.compose(new THREE.Vector3(x,1.2,z),new THREE.Quaternion(),new THREE.Vector3(s,1,s));trunks.setMatrixAt(i,mx)}
+crowns.castShadow=true;S.add(crowns,trunks);
+// chałupa mazowiecka XIX w.: zrąb z bali, bielone szpary, dach naczółkowy kryty strzechą z okapem, 2 okienka, sień z drzwiami, komin z gliny
+const tex=(draw,w=256,h=256,rx=1,ry=1)=>{const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.colorSpace=THREE.SRGBColorSpace;return t};
+const logTex=white=>tex((x,w,h)=>{for(let y=0;y<h;y+=16){x.fillStyle=white?'#e9e3d3':`hsl(30,${30+rnd()*10}%,${30+rnd()*8}%)`;x.fillRect(0,y,w,14);x.fillStyle=white?'#cfc6b0':'#d8cfb8';x.fillRect(0,y+14,w,2)}
+  if(!white)for(let i=0;i<120;i++){x.strokeStyle='rgba(0,0,0,.18)';x.beginPath();const yy=Math.random()*h,xx=Math.random()*w;x.moveTo(xx,yy);x.lineTo(xx+20+Math.random()*40,yy+Math.random()*2);x.stroke()}},256,256,2,1);
+const thatchTex=tex((x,w,h)=>{x.fillStyle='#8c7642';x.fillRect(0,0,w,h);for(let i=0;i<2600;i++){const xx=Math.random()*w,yy=Math.random()*h;x.strokeStyle=`hsl(${38+Math.random()*10},${35+Math.random()*20}%,${25+Math.random()*25}%)`;x.beginPath();x.moveTo(xx,yy);x.lineTo(xx+(Math.random()-.5)*3,yy+10+Math.random()*12);x.stroke()}
+  for(let y=0;y<h;y+=32){x.fillStyle='rgba(0,0,0,.18)';x.fillRect(0,y,w,3)}},256,256,3,2);
+const wallLog=new THREE.MeshLambertMaterial({map:logTex(false)}),wallWhite=new THREE.MeshLambertMaterial({map:logTex(true)}),thatchM=new THREE.MeshLambertMaterial({map:thatchTex,side:THREE.DoubleSide});
+const winM=M('#2a3440'),frameM=M('#efe9da'),doorM=M('#5a3b1f'),clayM=M('#b9a585');
+// dach naczółkowy: przekrój trójkąt + ścięte szczyty, okap 0.8 poza ściany
+function roofGeo(w,d,h,ov){const W=w/2+ov,D=d/2+ov,cut=W*.45,top=h,ch=h*.55;
+  const P=[[-W,0,-D],[W,0,-D],[W,0,D],[-W,0,D],[-cut,top,0],[cut,top,0],[-W+.01,ch,0],[W-.01,ch,0]];
+  const F=[[0,1,5,4],[3,4,5,2],[0,4,6,0],[3,6,4,3],[1,7,5,1],[2,5,7,2],[0,6,3,0],[1,2,7,1]];
+  const pos=[],uv=[];for(const f of F){const q=[f[0],f[1],f[2],f[0],f[2],f[3]];for(const k of q){pos.push(...P[k]);uv.push((P[k][0]+W)/(2*W)*3,(P[k][1])/top*2+(P[k][2]+D)/(2*D))}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g}
+function hut(x,z,rot,big){const G=new THREE.Group();const w=big?10:8.2,d=5.2,wh=2.5,isW=rnd()<.35;
+  const b=new THREE.Mesh(new THREE.BoxGeometry(w,wh,d),isW?wallWhite:wallLog);b.position.y=wh/2+.25;b.castShadow=b.receiveShadow=true;G.add(b);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(w+.2,.3,d+.2),M('#7a7468'));base.position.y=.15;G.add(base); // podmurówka z kamieni polnych
+  const r=new THREE.Mesh(roofGeo(w,d,4.2,.8),thatchM);r.position.y=wh+.25;r.castShadow=true;G.add(r);
+  const ch=new THREE.Mesh(new THREE.BoxGeometry(.9,1.6,.9),clayM);ch.position.set(-w*.12,wh+3.6,0);ch.castShadow=true;G.add(ch);
+  // front od drogi (+z): drzwi do sieni pośrodku, okienko izby z lewej i z prawej (izba i komora)
+  const door=new THREE.Mesh(new THREE.BoxGeometry(1,1.9,.12),doorM);door.position.set(w*.05,1.2,d/2+.04);G.add(door);
+  for(const sx of[-w*.3,w*.32]){const fr=new THREE.Mesh(new THREE.BoxGeometry(1.05,1,.1),frameM);fr.position.set(sx,1.7,d/2+.03);const gl=new THREE.Mesh(new THREE.BoxGeometry(.8,.75,.12),winM);gl.position.set(sx,1.7,d/2+.05);
+    const cx=new THREE.Mesh(new THREE.BoxGeometry(.08,.75,.14),frameM),cy=new THREE.Mesh(new THREE.BoxGeometry(.8,.08,.14),frameM);cx.position.copy(gl.position);cy.position.copy(gl.position);G.add(fr,gl,cx,cy)}
+  const bench=new THREE.Mesh(new THREE.BoxGeometry(2.2,.15,.45),doorM);bench.position.set(-w*.3,.7,d/2+.5);G.add(bench); // ława przed chałupą
+  // stodoła z desek i dachem ze strzechy, płot sztachetowy, drzewa owocowe
+  const st=new THREE.Mesh(new THREE.BoxGeometry(11,3.6,6),wallLog);st.position.set(1,1.8,-12);st.castShadow=true;G.add(st);
+  const sr=new THREE.Mesh(roofGeo(11,6,4,.6),thatchM);sr.position.set(1,3.6,-12);sr.castShadow=true;G.add(sr);
+  const gate=new THREE.Mesh(new THREE.BoxGeometry(3,2.8,.15),doorM);gate.position.set(1,1.4,-8.95);G.add(gate);
+  for(let k=-6;k<=6;k+=.7){if(k>2.5&&k<4.5)continue;const p=new THREE.Mesh(new THREE.BoxGeometry(.12,1.1+rnd()*.2,.08),M('#6f5638'));p.position.set(k,.55,4.6);G.add(p)}
+  for(const yy of[.45,.9]){const rail=new THREE.Mesh(new THREE.BoxGeometry(12.4,.1,.1),M('#6f5638'));rail.position.set(0,yy,4.55);G.add(rail)}
+  for(let k=0;k<3;k++){const tr=new THREE.Mesh(new THREE.CylinderGeometry(.2,.25,2.2,5),M('#4b3520'));const cr=new THREE.Mesh(new THREE.SphereGeometry(1.8+rnd(),8,6),M('#3f6b35'));const px=-6+rnd()*12,pz=-4-rnd()*3.5;tr.position.set(px,1.1,pz);cr.position.set(px,3.1,pz);cr.castShadow=true;G.add(tr,cr)}
+  // studnia z żurawiem przy co trzeciej zagrodzie
+  if(rnd()<.35){const w1=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,.8,10),M('#7a7468'));w1.position.set(w/2+2,.4,1);const pole=new THREE.Mesh(new THREE.CylinderGeometry(.1,.12,3.2,5),M('#4b3520'));pole.position.set(w/2+3.2,1.6,1);
+    const arm=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,6,5),M('#4b3520'));arm.position.set(w/2+2.6,3.4,1);arm.rotation.z=1.0;G.add(w1,pole,arm)}
+  G.position.set(x,0,z);G.rotation.y=rot;S.add(G)}
+// ok. 18 zagród w dwóch rzędach wzdłuż drogi, jak na mapie (zwarta ulicówka)
+const half=Math.ceil(HOUSES/2),x0=-half*7;for(let i=0;i<half;i++){hut(x0+i*14+rnd()*2,-12,0,i%4==0);if(i<HOUSES-half)hut(x0+5+i*14+rnd()*2,14,Math.PI,i%3==0)}
+// krzyż przydrożny na zachodnim końcu wsi
+const cr=new THREE.Group(),cw=M('#3b2a1a');const v=new THREE.Mesh(new THREE.BoxGeometry(.5,7,.5),cw);v.position.y=3.5;const hb=new THREE.Mesh(new THREE.BoxGeometry(3,.45,.45),cw);hb.position.y=5.4;cr.add(v,hb);cr.position.set(x0-20,0,-6);cr.traverse(o=>o.castShadow=true);S.add(cr);
+// podpisy miejsc
+const labs=[[NAME,0,14,0],['krzyż',x0-20,9,-6],['las',0,12,130],['pastwisko gromadzkie',110,4,-40]].map(([t,x,y,z])=>{const e=document.createElement('div');e.className='lab';e.textContent=t;document.body.append(e);return{e,p:new THREE.Vector3(x,y,z)}});
+const fly=(p,t)=>{C.position.set(...p);O.target.set(...t)};document.getElementById('near').onclick=()=>fly([-6,5,8],[-2,2.5,-12]);document.getElementById('far').onclick=()=>fly([-60,90,140],[0,0,0]);
+addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)});
+(function loop(){requestAnimationFrame(loop);O.update();R.render(S,C);for(const l of labs){const q=l.p.clone().project(C);l.e.style.display=q.z<1?'block':'none';l.e.style.left=(q.x+1)/2*innerWidth+'px';l.e.style.top=(1-q.y)/2*innerHeight+'px'}})();
+</script></body></html>
