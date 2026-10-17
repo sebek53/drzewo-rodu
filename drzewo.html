@@ -142,7 +142,7 @@ const EN={'brak':'none','Plakat':'Poster','Plakat drzewa':'Family tree poster','
 'urodzenia osób o tym nazwisku rok po roku, do ostatniego pokolenia':'births of people with this surname, year by year, to the last generation','▶ Animacja migracji w czasie':'▶ Migration animation','⏸ Zatrzymaj':'⏸ Stop','Do roku:':'Up to year:','strzałka: miejsce urodzenia rodzica → dziecka':'arrow: parent’s birthplace → child’s',
 'miejsca urodzeń wg lat (skąd i kiedy)':'birthplaces by year (where and when)','kolor = pokolenie względem tej osoby':'colour = generation relative to this person','📍 Popraw położenie':'📍 Fix location','🏡 Wieś w 3D':'🏡 Village in 3D','Pokaż na mapie z tamtej epoki':'Show on a map from that time','Brak połączenia z internetem – mapa niedostępna.':'No internet connection – map unavailable.',
 'pokolenie osoby':'person’s generation','rodzice':'parents','dziadkowie':'grandparents','pradziadkowie':'great-grandparents','dzieci':'children','wnuki':'grandchildren','prawnuki':'great-grandchildren',
-'+ Nowa notatka':'+ New note','Mapy i obrazy':'Maps and images','+ Dodaj mapę lub obraz':'+ Add a map or image','Opis':'Description','Brak notatek.':'No notes.','Dodaj pierwszą notatkę.':'Add the first note.','Kopiuj':'Copy','Edycja':'Edit',
+'+ Nowa notatka':'+ New note','Mapy i obrazy':'Maps and images','Wieś w 3D':'Village in 3D','+ Dodaj widok 3D':'+ Add 3D view','Otwórz':'Open','kościół':'church','+ Dodaj mapę lub obraz':'+ Add a map or image','Opis':'Description','Brak notatek.':'No notes.','Dodaj pierwszą notatkę.':'Add the first note.','Kopiuj':'Copy','Edycja':'Edit',
 'Sieć społeczna rodu – kumowie, świadkowie, zgłaszający':'Family social network – godparents, witnesses, informants','chrzestny':'godparent','świadek':'witness','zgłaszający zgon/urodzenie':'informant (death/birth)','rodzina (zięć, brat…)':'family (son-in-law, brother…)',
 'Detektyw sprzeczności':'Conflict detective','Brak wykrytych sprzeczności.':'No conflicts found.','Sprawdź daty – zbyt młody wiek lub zdarzenie przed narodzinami':'Check dates – too young or event before birth',
 'Oś czasu rodu':'Family timeline','Koło przodków w czasie':'Ancestor time wheel','po mieczu (ojciec)':'paternal (father)','po kądzieli (matka)':'maternal (mother)','Kto żył w tej wsi':'Who lived in this village','Listy do archiwów':'Letters to archives','Statystyki':'Statistics','Brakujące ogniwa':'Missing links','DNA wg gałęzi':'DNA by branch',
@@ -650,9 +650,13 @@ var geoC={};try{geoC=JSON.parse(localStorage.getItem('geo')||'{}')}catch(e){}
 var geoFix={};try{geoFix=JSON.parse(localStorage.getItem('geofix')||'{}')}catch(e){}
 var geo=p=>!/^\s*(poland|polska|polen|usa|niemcy|germany)\s*$/i.test(p)&&(geoFix[p]||GEO[p]||geoC[p]); // ręczna poprawka > wbudowane > pobrane
 // widok 3D wsi: własny model (np. luszczanow_3d.html obok aplikacji) ma pierwszeństwo przed ogólnym wies3d.html
-async function open3d(m){const slug=m.toLowerCase().normalize('NFD').replace(/ł/g,'l').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+const v3ds=()=>notes().flatMap(n=>kids(n,'_WIES3D').map(v=>({n,v,id:n.id+'|'+n.kids.indexOf(v)})));
+const v3dKey=s=>String(s).split(',')[0].trim().toLowerCase();
+const v3dFor=pl=>v3ds().find(x=>v3dKey(pl).startsWith(v3dKey(x.v.val))); // np. „Łuszczanów, par. Suserz” → widok „Łuszczanów”
+function open3dV(id){const x=v3ds().find(x=>x.id===id);if(x)open3d(x.v.val,sub(x.v,'_DOMY')?.val,sub(x.v,'_KOSC')?.val)}
+async function open3d(m,dm,ko){const slug=m.toLowerCase().normalize('NFD').replace(/ł/g,'l').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
   const w=window.open('','_blank'); // okno od razu (w kliknięciu), inaczej przeglądarka blokuje je jako wyskakujące
-  let own=false;try{own=(await fetch(slug+'_3d.html',{method:'HEAD'})).ok}catch(e){}const u=own?slug+'_3d.html':'wies3d.html?m='+encodeURIComponent(m);if(w)w.location.href=new URL(u,location.href).href;else location.href=u}
+  let own=false;try{own=(await fetch(slug+'_3d.html',{method:'HEAD'})).ok}catch(e){}const u=own?slug+'_3d.html':'wies3d.html?m='+encodeURIComponent(m)+(dm?'&d='+dm:'')+(ko==='N'?'&k=0':'');if(w)w.location.href=new URL(u,location.href).href;else location.href=u}
 var movePl=null; // „Popraw położenie”: następny klik na mapie ustawia punkt
 function startMove(pl){movePl=pl;lmap.closePopup();$('#map').style.cursor='crosshair';$('#movemsg').style.display='block';$('#movemsg').innerHTML=`Kliknij na mapie właściwe miejsce dla: <b>${esc(pl)}</b> <button onclick="movePl=null;this.parentNode.style.display='none';$('#map').style.cursor=''">Anuluj</button>`} // sam kraj = brak konkretnego miejsca
 // mapy z epoki: WMS IH PAN (Atlas Fontium); „auto” = najbliższa mapa dla roku z suwaka
@@ -704,7 +708,7 @@ function renderMap(){
   {const ep=epokaFor(mapYear);histLayer=null;if(ep.l)histLayer=L.tileLayer.wms('https://pastmaps.cenagis.edu.pl/geoserver/ihpan/wms',{layers:ep.l,format:'image/png',transparent:true,version:'1.1.1',maxZoom:18,opacity:mapOpac,attribution:'Mapy historyczne: IH PAN – Atlas Fontium'}).addTo(lmap)}
   const b=[];Object.values(pts).filter(x=>mapGen.has(x.g)).sort((a,b)=>b.g-a.g).forEach(({pl,g,ps})=>{const[la,lo]=geo(pl),o=(gl.indexOf(g)-gl.length/2)*.004;b.push([la,lo]);
     L.circleMarker([la+o,lo+o],{radius:5+Math.min(12,Math.sqrt(ps.size)*3),color:'#fff',weight:1,fillColor:genCol(g),fillOpacity:.85}).addTo(lmap)
-     .bindPopup(`<b>${esc(pl)}</b><br><small>${genName(g)}</small><br>${[...ps.values()].map(p=>`<a href="#" onclick="showPanel('${p.id}');return false">${esc(name(p))}</a> <small>${life(p)}</small>`).join('<br>')}<br><button style="margin-top:6px;font-size:12px" onclick="startMove(decodeURIComponent('${encodeURIComponent(pl)}'))">📍 Popraw położenie</button> <button style="margin-top:6px;font-size:12px" onclick="open3d(decodeURIComponent('${encodeURIComponent(pl)}').split(',')[0])">🏡 Wieś w 3D</button>`)});
+     .bindPopup(`<b>${esc(pl)}</b><br><small>${genName(g)}</small><br>${[...ps.values()].map(p=>`<a href="#" onclick="showPanel('${p.id}');return false">${esc(name(p))}</a> <small>${life(p)}</small>`).join('<br>')}<br><button style="margin-top:6px;font-size:12px" onclick="startMove(decodeURIComponent('${encodeURIComponent(pl)}'))">📍 Popraw położenie</button> ${v3dFor(pl)?`<button style="margin-top:6px;font-size:12px" onclick="open3dV('${v3dFor(pl).id}')">🏡 Wieś w 3D</button>`:''}`)});
   const ml={};if(showMig)mig.forEach(m=>{const a=geo(m.from),z=geo(m.to),col=`hsl(${240-240*((m.y||y1)-y0)/Math.max(1,y1-y0)} 80% 45%)`;
     const ln=L.polyline([a,z],{color:col,weight:2.5,opacity:.8,dashArray:'6 4'}).addTo(lmap).bindPopup(`<b>${m.y||'?'}</b>: ${esc(m.from)} → ${esc(m.to)}<br><a href="#" onclick="showPanel('${m.c.id}');return false">${esc(name(m.c))}</a>`);
     const ang=Math.atan2(z[0]-a[0],z[1]-a[1])*180/Math.PI;L.marker(z,{interactive:false,icon:L.divIcon({className:'',iconSize:[14,14],iconAnchor:[7,7],html:`<div style="color:${col};font-size:14px;transform:rotate(${-ang}deg)">➤</div>`})}).addTo(lmap);ml[m.c.id]=ln});
@@ -757,7 +761,16 @@ function renderNotes(){const ns=notes();if(!ns.find(n=>n.id===noteSel))noteSel=n
      <div class="row" style="margin-top:8px"><button class="pri" onclick="saveNote()">Zapisz</button><button onclick="noteEdit=false;renderNotes()">Anuluj</button>
       <small class="mut" style="margin-left:auto">**pogrubienie**, # nagłówek, - lista, | tabela |</small></div>`:
     `<div class="row" style="margin-bottom:6px"><h2 style="margin:0;flex:1">${esc(noteTitle(n))}</h2><button onclick="noteEdit=true;renderNotes()">Edytuj</button><button style="color:#c33" onclick="delNote()">Usuń</button></div>
-     <div class="nmd">${md(noteBody(n))}</div>${noteImgs(n)}`}</div></div>`}
+     <div class="nmd">${md(noteBody(n))}</div>${noteImgs(n)}${note3d(n)}`}</div></div>`}
+// widok 3D wsi przy notatce: przycisk „Wieś w 3D” pojawia się wtedy też na mapie przy tej miejscowości
+function note3d(n){const L=kids(n,'_WIES3D');return`<h3 style="margin:22px 0 8px">Wieś w 3D</h3>
+  ${L.map((v,i)=>`<div class="row" style="gap:8px;margin-bottom:6px"><b>🏡 ${esc(v.val)}</b><small class="mut">${esc(sub(v,'_DOMY')?.val||'18')} zagród${sub(v,'_KOSC')?.val==='N'?', bez kościoła':', z kościołem'}</small>
+   <button onclick="open3dV('${n.id}|${n.kids.indexOf(v)}')">Otwórz</button><button style="color:#c33" onclick="v3dDel(${i})">Usuń</button></div>`).join('')}
+  <div class="row" style="gap:6px;flex-wrap:wrap"><input id="v3n" placeholder="miejscowość, np. Łuszczanów" style="flex:1;min-width:160px"><input id="v3d" type="number" min="4" max="60" value="18" style="width:70px" title="liczba zagród">
+   <label><input type="checkbox" id="v3k" checked> kościół</label><button onclick="v3dAdd()">+ Dodaj widok 3D</button></div>
+  <small class="mut">Widok jest poglądowy (typowa wieś z XIX w.). Własny model położony obok aplikacji jako nazwa_3d.html (np. luszczanow_3d.html) otworzy się zamiast niego.</small>`}
+function v3dAdd(){const m=$('#v3n').value.trim();if(!m)return;const n=byId[noteSel],v={lvl:1,id:null,tag:'_WIES3D',val:m,kids:[]};n.kids.push(v);setKid(v,'_DOMY',String(+$('#v3d').value||18));setKid(v,'_KOSC',$('#v3k').checked?'T':'N');persist();renderNotes();if(fileHandle)saveFile(true)}
+function v3dDel(i){const n=byId[noteSel],v=kids(n,'_WIES3D')[i];n.kids.splice(n.kids.indexOf(v),1);persist();renderNotes();if(fileHandle)saveFile(true)}
 // mapy i obrazy przy notatce: „1 OBJE” (FILE = JPEG do 2000px, TITL = tytuł, NOTE = opis) zapisane w .ged razem z notatką
 const nimgs=n=>kids(n,'OBJE');
 function noteImgs(n){const L=nimgs(n);return`<h3 style="margin:22px 0 8px">Mapy i obrazy</h3>
