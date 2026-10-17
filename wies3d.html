@@ -7,7 +7,7 @@ html,body{margin:0;height:100%;background:#cfd8dc;font-family:Montserrat,Arial,s
 #info b{font-size:15px}
 .lab{position:fixed;transform:translate(-50%,-100%);font:700 13px Montserrat,Arial,sans-serif;color:#222;background:rgba(255,255,255,.8);padding:2px 6px;border-radius:4px;pointer-events:none;white-space:nowrap}
 </style></head><body>
-<div id="info"><b id="tt"></b><br>Poglądowy obraz wsi z XIX w.: zagrody wzdłuż drogi, krzyż przydrożny, pola pasami, pastwisko gromadzkie, las. Liczbę zagród można zmienić w adresie (&amp;d=24).<br><small>Mysz: obracanie · kółko: przybliżenie · prawy przycisk: przesuwanie. Układ i budynki są typowe dla wsi tamtych czasów, nie odwzorowują tej konkretnej wsi.</small><br><button id="near">🏠 Zbliż na chałupę</button> <button id="far">🗺 Cała wieś</button></div>
+<div id="info"><b id="tt"></b><br>Poglądowy obraz wsi z XIX w.: zagrody wzdłuż drogi, krzyż przydrożny, pola pasami, pastwisko gromadzkie, las. Liczbę zagród zmienisz w adresie (&amp;d=24), kościół wyłączysz (&amp;k=0).<br><small>Mysz: obracanie · kółko: przybliżenie · prawy przycisk: przesuwanie. Układ i budynki są typowe dla wsi tamtych czasów, nie odwzorowują tej konkretnej wsi.</small><br><button id="near">🏠 Zbliż na chałupę</button> <button id="far">🗺 Cała wieś</button> <button id="kos">⛪ Kościół</button></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -27,7 +27,7 @@ const g=new THREE.Mesh(new THREE.PlaneGeometry(600,500),M('#8fa35a'));g.rotation
 const fieldCols=['#c9b26b','#a9a253','#b98f55','#d2c27d','#8d9a4e','#b5a35e'];
 for(const [z0,z1] of [[-150,-25],[25,60]])for(let x=-200;x<200;x+=7){const f=new THREE.Mesh(new THREE.PlaneGeometry(6.6,z1-z0),M(fieldCols[Math.floor(rnd()*fieldCols.length)]));f.rotation.x=-Math.PI/2;f.position.set(x+3.3,.05,(z0+z1)/2);f.receiveShadow=true;S.add(f)}
 // pastwisko gromadzkie i łąki przy strumieniu (40 + 20 morgów)
-const past=new THREE.Mesh(new THREE.PlaneGeometry(70,40),M('#7fa04f'));past.rotation.x=-Math.PI/2;past.position.set(110,.06,-40);S.add(past);
+const past=new THREE.Mesh(new THREE.PlaneGeometry(70,40),M('#7fa04f'));past.rotation.x=-Math.PI/2;past.position.set(-150,.06,-50);S.add(past);
 // droga wiejska wschód–zachód i drogi do Słupu i Rybiego
 const road=(pts,w=3)=>{const c=new THREE.CatmullRomCurve3(pts.map(([x,z])=>new THREE.Vector3(x,.12,z)));const n=60;for(let i=0;i<n;i++){const a=c.getPoint(i/n),b=c.getPoint((i+1)/n),seg=new THREE.Mesh(new THREE.PlaneGeometry(w,a.distanceTo(b)+.4),M('#b9a27a'));seg.rotation.x=-Math.PI/2;seg.rotation.z=-Math.atan2(b.x-a.x,b.z-a.z);seg.position.copy(a.clone().add(b).multiplyScalar(.5));S.add(seg)}};
 road([[-220,-5],[-120,-2],[-40,0],[40,2],[120,8],[230,20]]);road([[-20,0],[-40,60],[-70,180]],2.4);road([[60,3],[120,40],[170,90]],2.4);
@@ -75,9 +75,27 @@ function hut(x,z,rot,big){const G=new THREE.Group();const w=big?10:8.2,d=5.2,wh=
 const half=Math.ceil(HOUSES/2),x0=-half*7;for(let i=0;i<half;i++){hut(x0+i*14+rnd()*2,-12,0,i%4==0);if(i<HOUSES-half)hut(x0+5+i*14+rnd()*2,14,Math.PI,i%3==0)}
 // krzyż przydrożny na zachodnim końcu wsi
 const cr=new THREE.Group(),cw=M('#3b2a1a');const v=new THREE.Mesh(new THREE.BoxGeometry(.5,7,.5),cw);v.position.y=3.5;const hb=new THREE.Mesh(new THREE.BoxGeometry(3,.45,.45),cw);hb.position.y=5.4;cr.add(v,hb);cr.position.set(x0-20,0,-6);cr.traverse(o=>o.castShadow=true);S.add(cr);
+// kościół drewniany na wschodnim końcu wsi (wyłącz: &k=0) – nie każda wieś miała kościół, wtedy chodzono do parafii obok
+const KX=-x0+40,KZ=-45;if(Q.get('k')!=='0'){const SX=KX,SZ=KZ,K=new THREE.Group(),wood=M('#6b4a2c'),shingle=M('#4a3a2c'),wh=M('#e6e0cf');
+  const nave=new THREE.Mesh(new THREE.BoxGeometry(12,7,22),wood);nave.position.set(0,3.5,0);
+  const nr=new THREE.Mesh(roofGeo(12,22,7,.6),shingle);nr.rotation.y=Math.PI/2;nr.position.y=7;
+  const pres=new THREE.Mesh(new THREE.BoxGeometry(8,6,8),wood);pres.position.set(0,3,-15);
+  const pr=new THREE.Mesh(roofGeo(8,8,5,.5),shingle);pr.rotation.y=Math.PI/2;pr.position.set(0,6,-15);
+  const tw=new THREE.Mesh(new THREE.BoxGeometry(6,14,6),wood);tw.position.set(0,7,14);
+  const tw2=new THREE.Mesh(new THREE.BoxGeometry(4.2,4,4.2),wood);tw2.position.set(0,16,14);
+  const sp=new THREE.Mesh(new THREE.ConeGeometry(3.6,9,4),shingle);sp.rotation.y=Math.PI/4;sp.position.set(0,22.5,14);
+  const c1=new THREE.Mesh(new THREE.BoxGeometry(.3,3,.3),M('#c9a640')),c2=new THREE.Mesh(new THREE.BoxGeometry(1.6,.3,.3),M('#c9a640'));c1.position.set(0,28.4,14);c2.position.set(0,28.8,14);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(2,3.4,.2),M('#3b2614'));door.position.set(0,1.7,17.05);
+  K.add(nave,nr,pres,pr,tw,tw2,sp,c1,c2,door);
+  for(const z of[-6,0,6])for(const x of[-6.05,6.05]){const w=new THREE.Mesh(new THREE.BoxGeometry(.15,2.4,1.2),wh);w.position.set(x,4,z);K.add(w)}
+  // ogrodzenie cmentarza przykościelnego i drzewa
+  for(let a=0;a<Math.PI*2;a+=.05){const p=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.4,.3),M('#8d8577'));p.position.set(Math.cos(a)*26,.7,Math.sin(a)*30-2);p.rotation.y=-a;K.add(p)}
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,t=new THREE.Mesh(new THREE.SphereGeometry(3+rnd()*1.5,8,6),M('#36602f')),tr=new THREE.Mesh(new THREE.CylinderGeometry(.35,.45,4,5),M('#4b3520'));const x=Math.cos(a)*21,z=Math.sin(a)*25-2;t.position.set(x,6,z);tr.position.set(x,2,z);t.castShadow=true;K.add(t,tr)}
+  K.traverse(o=>o.castShadow=true);K.position.set(SX,0,SZ);K.rotation.y=.3;S.add(K);
+}
 // podpisy miejsc
-const labs=[[NAME,0,14,0],['krzyż',x0-20,9,-6],['las',0,12,130],['pastwisko gromadzkie',110,4,-40]].map(([t,x,y,z])=>{const e=document.createElement('div');e.className='lab';e.textContent=t;document.body.append(e);return{e,p:new THREE.Vector3(x,y,z)}});
-const fly=(p,t)=>{C.position.set(...p);O.target.set(...t)};document.getElementById('near').onclick=()=>fly([-6,5,8],[-2,2.5,-12]);document.getElementById('far').onclick=()=>fly([-60,90,140],[0,0,0]);
+const labs=[[NAME,0,14,0],['krzyż',x0-20,9,-6]].concat(Q.get('k')!=='0'?[['kościół',KX,34,KZ]]:[]).concat([['las',0,12,130],['pastwisko gromadzkie',-150,4,-50]]).map(([t,x,y,z])=>{const e=document.createElement('div');e.className='lab';e.textContent=t;document.body.append(e);return{e,p:new THREE.Vector3(x,y,z)}});
+const fly=(p,t)=>{C.position.set(...p);O.target.set(...t)};document.getElementById('near').onclick=()=>fly([-6,5,8],[-2,2.5,-12]);document.getElementById('kos').onclick=()=>fly([KX+60,35,KZ+70],[KX,10,KZ]);if(Q.get('k')==='0')document.getElementById('kos').remove();document.getElementById('far').onclick=()=>fly([-60,90,140],[0,0,0]);
 addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)});
 (function loop(){requestAnimationFrame(loop);O.update();R.render(S,C);for(const l of labs){const q=l.p.clone().project(C);l.e.style.display=q.z<1?'block':'none';l.e.style.left=(q.x+1)/2*innerWidth+'px';l.e.style.top=(1-q.y)/2*innerHeight+'px'}})();
 </script></body></html>
