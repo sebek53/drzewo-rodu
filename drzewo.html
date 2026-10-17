@@ -651,7 +651,8 @@ var geoFix={};try{geoFix=JSON.parse(localStorage.getItem('geofix')||'{}')}catch(
 var geo=p=>!/^\s*(poland|polska|polen|usa|niemcy|germany)\s*$/i.test(p)&&(geoFix[p]||GEO[p]||geoC[p]); // ręczna poprawka > wbudowane > pobrane
 // widok 3D wsi: własny model (np. luszczanow_3d.html obok aplikacji) ma pierwszeństwo przed ogólnym wies3d.html
 async function open3d(m){const slug=m.toLowerCase().normalize('NFD').replace(/ł/g,'l').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
-  let own=false;try{own=(await fetch(slug+'_3d.html',{method:'HEAD'})).ok}catch(e){}window.open(own?slug+'_3d.html':'wies3d.html?m='+encodeURIComponent(m))}
+  const w=window.open('','_blank'); // okno od razu (w kliknięciu), inaczej przeglądarka blokuje je jako wyskakujące
+  let own=false;try{own=(await fetch(slug+'_3d.html',{method:'HEAD'})).ok}catch(e){}const u=own?slug+'_3d.html':'wies3d.html?m='+encodeURIComponent(m);if(w)w.location.href=new URL(u,location.href).href;else location.href=u}
 var movePl=null; // „Popraw położenie”: następny klik na mapie ustawia punkt
 function startMove(pl){movePl=pl;lmap.closePopup();$('#map').style.cursor='crosshair';$('#movemsg').style.display='block';$('#movemsg').innerHTML=`Kliknij na mapie właściwe miejsce dla: <b>${esc(pl)}</b> <button onclick="movePl=null;this.parentNode.style.display='none';$('#map').style.cursor=''">Anuluj</button>`} // sam kraj = brak konkretnego miejsca
 // mapy z epoki: WMS IH PAN (Atlas Fontium); „auto” = najbliższa mapa dla roku z suwaka
