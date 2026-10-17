@@ -656,7 +656,7 @@ const v3dFor=pl=>v3ds().find(x=>v3dKey(pl).startsWith(v3dKey(x.v.val))); // np. 
 function open3dV(id){const x=v3ds().find(x=>x.id===id);if(x)open3d(x.v.val,sub(x.v,'_DOMY')?.val,sub(x.v,'_KOSC')?.val)}
 async function open3d(m,dm,ko){const slug=m.toLowerCase().normalize('NFD').replace(/ł/g,'l').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
   const w=window.open('','_blank'); // okno od razu (w kliknięciu), inaczej przeglądarka blokuje je jako wyskakujące
-  let own=false;try{own=(await fetch(slug+'_3d.html',{method:'HEAD'})).ok}catch(e){}const u=own?slug+'_3d.html':'wies3d.html?m='+encodeURIComponent(m)+(dm?'&d='+dm:'')+(ko==='N'?'&k=0':'');if(w)w.location.href=new URL(u,location.href).href;else location.href=u}
+  let own=false;try{own=(await fetch('modele/'+slug+'_3d.html',{method:'HEAD'})).ok}catch(e){}const u=own?'modele/'+slug+'_3d.html':'wies3d.html?m='+encodeURIComponent(m)+(dm?'&d='+dm:'')+(ko==='N'?'&k=0':'');if(w)w.location.href=new URL(u,location.href).href;else location.href=u}
 var movePl=null; // „Popraw położenie”: następny klik na mapie ustawia punkt
 function startMove(pl){movePl=pl;lmap.closePopup();$('#map').style.cursor='crosshair';$('#movemsg').style.display='block';$('#movemsg').innerHTML=`Kliknij na mapie właściwe miejsce dla: <b>${esc(pl)}</b> <button onclick="movePl=null;this.parentNode.style.display='none';$('#map').style.cursor=''">Anuluj</button>`} // sam kraj = brak konkretnego miejsca
 // mapy z epoki: WMS IH PAN (Atlas Fontium); „auto” = najbliższa mapa dla roku z suwaka
@@ -768,7 +768,7 @@ function note3d(n){const L=kids(n,'_WIES3D');return`<h3 style="margin:22px 0 8px
    <button onclick="open3dV('${n.id}|${n.kids.indexOf(v)}')">Otwórz</button><button style="color:#c33" onclick="v3dDel(${i})">Usuń</button></div>`).join('')}
   <div class="row" style="gap:6px;flex-wrap:wrap"><input id="v3n" placeholder="miejscowość, np. Łuszczanów" style="flex:1;min-width:160px"><input id="v3d" type="number" min="4" max="60" value="18" style="width:70px" title="liczba zagród">
    <label><input type="checkbox" id="v3k" checked> kościół</label><button onclick="v3dAdd()">+ Dodaj widok 3D</button></div>
-  <small class="mut">Widok jest poglądowy (typowa wieś z XIX w.). Własny model położony obok aplikacji jako nazwa_3d.html (np. luszczanow_3d.html) otworzy się zamiast niego.</small>`}
+  <small class="mut">Widok jest poglądowy (typowa wieś z XIX w.). Własny model zapisany w folderze modele jako nazwa_3d.html (np. modele/luszczanow_3d.html) otworzy się zamiast niego.</small>`}
 function v3dAdd(){const m=$('#v3n').value.trim();if(!m)return;const n=byId[noteSel],v={lvl:1,id:null,tag:'_WIES3D',val:m,kids:[]};n.kids.push(v);setKid(v,'_DOMY',String(+$('#v3d').value||18));setKid(v,'_KOSC',$('#v3k').checked?'T':'N');persist();renderNotes();if(fileHandle)saveFile(true)}
 function v3dDel(i){const n=byId[noteSel],v=kids(n,'_WIES3D')[i];n.kids.splice(n.kids.indexOf(v),1);persist();renderNotes();if(fileHandle)saveFile(true)}
 // mapy i obrazy przy notatce: „1 OBJE” (FILE = JPEG do 2000px, TITL = tytuł, NOTE = opis) zapisane w .ged razem z notatką
